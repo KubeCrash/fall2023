@@ -1,0 +1,19 @@
+.margins {
+	margin-left: .5em;
+	margin-right:  0.5em;
+}
+
+.vert-margins {
+	margin-top: .5em;
+	margin-bottom: .5em;
+}
+
+.roundedButton {
+	border-radius: 7px;
+	min-width: 5em;
+}
+
+.log {
+	border-top: 1px solid gray;
+	padding-top: .3em;
+}

@@ -1,0 +1,331 @@
+<head>
+	<!--
+	SPDX-FileCopyrightText: 2023 Buoyant Inc.
+	SPDX-License-Identifier: Apache-2.0
+
+	Copyright 2022 Buoyant Inc.
+
+	Licensed under the Apache License, Version 2.0 (the "License"); you may
+	not use this file except in compliance with the License.  You may obtain
+	a copy of the License at
+
+	     http:#www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License. -->
+
+	<title>The World</title>
+	<link href="styles.css" rel="stylesheet" type="text/css">
+	<link href="grid-styles.css" rel="stylesheet" type="text/css">
+	<script type="module" src="world.js"></script>
+</head>
+<body style="background-color: white">
+
+<input id="btnToggle" type="button" value="Init..." class="roundedButton margins" />
+
+<div id="world" class="world-map">
+    <div id="na-container" class="map na-map">
+        <div id="na-grid" class="na-grid">
+            <div id="na00" class="cell na na00">
+                <div id="na00-content"></div>
+                <div id="na00-player" class="player-marker"></div>
+            </div>
+            <div id="na01" class="cell na na01">
+                <div id="na01-content"></div>
+                <div id="na01-player" class="player-marker"></div>
+            </div>
+            <div id="na02" class="cell na na02">
+                <div id="na02-content"></div>
+                <div id="na02-player" class="player-marker"></div>
+            </div>
+            <div id="na03" class="cell na na03">
+                <div id="na03-content"></div>
+                <div id="na03-player" class="player-marker"></div>
+            </div>
+            <div id="na04" class="cell na na04">
+                <div id="na04-content"></div>
+                <div id="na04-player" class="player-marker"></div>
+            </div>
+            <div id="na05" class="cell na na05">
+                <div id="na05-content"></div>
+                <div id="na05-player" class="player-marker"></div>
+            </div>
+            <div id="na06" class="cell na na06">
+                <div id="na06-content"></div>
+                <div id="na06-player" class="player-marker"></div>
+            </div>
+            <div id="na07" class="cell na na07">
+                <div id="na07-content"></div>
+                <div id="na07-player" class="player-marker"></div>
+            </div>
+            <div id="na08" class="cell na na08">
+                <div id="na08-content"></div>
+                <div id="na08-player" class="player-marker"></div>
+            </div>
+            <div id="na09" class="cell na na09">
+                <div id="na09-content"></div>
+                <div id="na09-player" class="player-marker"></div>
+            </div>
+            <div id="na10" class="cell na na10">
+                <div id="na10-content"></div>
+                <div id="na10-player" class="player-marker"></div>
+            </div>
+            <div id="na11" class="cell na na11">
+                <div id="na11-content"></div>
+                <div id="na11-player" class="player-marker"></div>
+            </div>
+            <div id="na12" class="cell na na12">
+                <div id="na12-content"></div>
+                <div id="na12-player" class="player-marker"></div>
+            </div>
+            <div id="na13" class="cell na na13">
+                <div id="na13-content"></div>
+                <div id="na13-player" class="player-marker"></div>
+            </div>
+            <div id="na14" class="cell na na14">
+                <div id="na14-content"></div>
+                <div id="na14-player" class="player-marker"></div>
+            </div>
+            <div id="na15" class="cell na na15">
+                <div id="na15-content"></div>
+                <div id="na15-player" class="player-marker"></div>
+            </div>
+            <div id="na16" class="cell na na16">
+                <div id="na16-content"></div>
+                <div id="na16-player" class="player-marker"></div>
+            </div>
+            <div id="na17" class="cell na na17">
+                <div id="na17-content"></div>
+                <div id="na17-player" class="player-marker"></div>
+            </div>
+            <div id="na18" class="cell na na18">
+                <div id="na18-content"></div>
+                <div id="na18-player" class="player-marker"></div>
+            </div>
+            <div id="na19" class="cell na na19">
+                <div id="na19-content"></div>
+                <div id="na19-player" class="player-marker"></div>
+            </div>
+            <div id="na20" class="cell na na20">
+                <div id="na20-content"></div>
+                <div id="na20-player" class="player-marker"></div>
+            </div>
+            <div id="na21" class="cell na na21">
+                <div id="na21-content"></div>
+                <div id="na21-player" class="player-marker"></div>
+            </div>
+            <div id="na22" class="cell na na22">
+                <div id="na22-content"></div>
+                <div id="na22-player" class="player-marker"></div>
+            </div>
+            <div id="na23" class="cell na na23">
+                <div id="na23-content"></div>
+                <div id="na23-player" class="player-marker"></div>
+            </div>
+            <div id="na24" class="cell na na24">
+                <div id="na24-content"></div>
+                <div id="na24-player" class="player-marker"></div>
+            </div>
+            <div id="na25" class="cell na na25">
+                <div id="na25-content"></div>
+                <div id="na25-player" class="player-marker"></div>
+            </div>
+            <div id="na26" class="cell na na26">
+                <div id="na26-content"></div>
+                <div id="na26-player" class="player-marker"></div>
+            </div>
+            <div id="na27" class="cell na na27">
+                <div id="na27-content"></div>
+                <div id="na27-player" class="player-marker"></div>
+            </div>
+            <div id="na28" class="cell na na28">
+                <div id="na28-content"></div>
+                <div id="na28-player" class="player-marker"></div>
+            </div>
+            <div id="na29" class="cell na na29">
+                <div id="na29-content"></div>
+                <div id="na29-player" class="player-marker"></div>
+            </div>
+            <div id="na30" class="cell na na30">
+                <div id="na30-content"></div>
+                <div id="na30-player" class="player-marker"></div>
+            </div>
+            <div id="na31" class="cell na na31">
+                <div id="na31-content"></div>
+                <div id="na31-player" class="player-marker"></div>
+            </div>
+            <div id="na32" class="cell na na32">
+                <div id="na32-content"></div>
+                <div id="na32-player" class="player-marker"></div>
+            </div>
+            <div id="na33" class="cell na na33">
+                <div id="na33-content"></div>
+                <div id="na33-player" class="player-marker"></div>
+            </div>
+            <div id="na34" class="cell na na34">
+                <div id="na34-content"></div>
+                <div id="na34-player" class="player-marker"></div>
+            </div>
+            <div id="na35" class="cell na na35">
+                <div id="na35-content"></div>
+                <div id="na35-player" class="player-marker"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="eu-container" class="map eu-map">
+        <div id="eu-grid" class="eu-grid">
+            <div id="eu00" class="cell eu eu00">
+                <div id="eu00-content"></div>
+                <div id="eu00-player" class="player-marker"></div>
+            </div>
+            <div id="eu01" class="cell eu eu01">
+                <div id="eu01-content"></div>
+                <div id="eu01-player" class="player-marker"></div>
+            </div>
+            <div id="eu02" class="cell eu eu02">
+                <div id="eu02-content"></div>
+                <div id="eu02-player" class="player-marker"></div>
+            </div>
+            <div id="eu03" class="cell eu eu03">
+                <div id="eu03-content"></div>
+                <div id="eu03-player" class="player-marker"></div>
+            </div>
+            <div id="eu04" class="cell eu eu04">
+                <div id="eu04-content"></div>
+                <div id="eu04-player" class="player-marker"></div>
+            </div>
+            <div id="eu05" class="cell eu eu05">
+                <div id="eu05-content"></div>
+                <div id="eu05-player" class="player-marker"></div>
+            </div>
+            <div id="eu06" class="cell eu eu06">
+                <div id="eu06-content"></div>
+                <div id="eu06-player" class="player-marker"></div>
+            </div>
+            <div id="eu07" class="cell eu eu07">
+                <div id="eu07-content"></div>
+                <div id="eu07-player" class="player-marker"></div>
+            </div>
+            <div id="eu08" class="cell eu eu08">
+                <div id="eu08-content"></div>
+                <div id="eu08-player" class="player-marker"></div>
+            </div>
+            <div id="eu09" class="cell eu eu09">
+                <div id="eu09-content"></div>
+                <div id="eu09-player" class="player-marker"></div>
+            </div>
+            <div id="eu10" class="cell eu eu10">
+                <div id="eu10-content"></div>
+                <div id="eu10-player" class="player-marker"></div>
+            </div>
+            <div id="eu11" class="cell eu eu11">
+                <div id="eu11-content"></div>
+                <div id="eu11-player" class="player-marker"></div>
+            </div>
+            <div id="eu12" class="cell eu eu12">
+                <div id="eu12-content"></div>
+                <div id="eu12-player" class="player-marker"></div>
+            </div>
+            <div id="eu13" class="cell eu eu13">
+                <div id="eu13-content"></div>
+                <div id="eu13-player" class="player-marker"></div>
+            </div>
+            <div id="eu14" class="cell eu eu14">
+                <div id="eu14-content"></div>
+                <div id="eu14-player" class="player-marker"></div>
+            </div>
+            <div id="eu15" class="cell eu eu15">
+                <div id="eu15-content"></div>
+                <div id="eu15-player" class="player-marker"></div>
+            </div>
+            <div id="eu16" class="cell eu eu16">
+                <div id="eu16-content"></div>
+                <div id="eu16-player" class="player-marker"></div>
+            </div>
+            <div id="eu17" class="cell eu eu17">
+                <div id="eu17-content"></div>
+                <div id="eu17-player" class="player-marker"></div>
+            </div>
+            <div id="eu18" class="cell eu eu18">
+                <div id="eu18-content"></div>
+                <div id="eu18-player" class="player-marker"></div>
+            </div>
+            <div id="eu19" class="cell eu eu19">
+                <div id="eu19-content"></div>
+                <div id="eu19-player" class="player-marker"></div>
+            </div>
+            <div id="eu20" class="cell eu eu20">
+                <div id="eu20-content"></div>
+                <div id="eu20-player" class="player-marker"></div>
+            </div>
+            <div id="eu21" class="cell eu eu21">
+                <div id="eu21-content"></div>
+                <div id="eu21-player" class="player-marker"></div>
+            </div>
+            <div id="eu22" class="cell eu eu22">
+                <div id="eu22-content"></div>
+                <div id="eu22-player" class="player-marker"></div>
+            </div>
+            <div id="eu23" class="cell eu eu23">
+                <div id="eu23-content"></div>
+                <div id="eu23-player" class="player-marker"></div>
+            </div>
+            <div id="eu24" class="cell eu eu24">
+                <div id="eu24-content"></div>
+                <div id="eu24-player" class="player-marker"></div>
+            </div>
+            <div id="eu25" class="cell eu eu25">
+                <div id="eu25-content"></div>
+                <div id="eu25-player" class="player-marker"></div>
+            </div>
+            <div id="eu26" class="cell eu eu26">
+                <div id="eu26-content"></div>
+                <div id="eu26-player" class="player-marker"></div>
+            </div>
+            <div id="eu27" class="cell eu eu27">
+                <div id="eu27-content"></div>
+                <div id="eu27-player" class="player-marker"></div>
+            </div>
+            <div id="eu28" class="cell eu eu28">
+                <div id="eu28-content"></div>
+                <div id="eu28-player" class="player-marker"></div>
+            </div>
+            <div id="eu29" class="cell eu eu29">
+                <div id="eu29-content"></div>
+                <div id="eu29-player" class="player-marker"></div>
+            </div>
+            <div id="eu30" class="cell eu eu30">
+                <div id="eu30-content"></div>
+                <div id="eu30-player" class="player-marker"></div>
+            </div>
+            <div id="eu31" class="cell eu eu31">
+                <div id="eu31-content"></div>
+                <div id="eu31-player" class="player-marker"></div>
+            </div>
+            <div id="eu32" class="cell eu eu32">
+                <div id="eu32-content"></div>
+                <div id="eu32-player" class="player-marker"></div>
+            </div>
+            <div id="eu33" class="cell eu eu33">
+                <div id="eu33-content"></div>
+                <div id="eu33-player" class="player-marker"></div>
+            </div>
+            <div id="eu34" class="cell eu eu34">
+                <div id="eu34-content"></div>
+                <div id="eu34-player" class="player-marker"></div>
+            </div>
+            <div id="eu35" class="cell eu eu35">
+                <div id="eu35-content"></div>
+                <div id="eu35-player" class="player-marker"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <div id="log" class="log"><div> -->
+
+</body>

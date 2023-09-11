@@ -1,0 +1,172 @@
+.world-map {
+  display: flex;
+}
+
+.map {
+  width: 600px;
+  height: 450px;
+  margin: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* border: 1px solid grey; */
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.na-map {
+  background-image: url("/world.svg");
+  background-repeat: no-repeat;
+  background-position: -125 -220;
+  background-size: 3000px;
+}
+
+.na-grid {
+  display: grid;
+  /* width: 375px;
+  height: 225px; */
+  grid-auto-columns: 48px;
+  grid-auto-rows: 48px;
+  /* border: 1px solid blue; */
+  grid-template-areas:
+    "na00 na01 na02 na03 na04 na05"
+    "na06 na07 na08 na09 na10 na11"
+    "na12 na13 na14 na15 na16 na17"
+    "na18 na19 na20 na21 na22 na23"
+    "na24 na25 na26 na27 na28 na29"
+    "na30 na31 na32 na33 na34 na35";
+}
+
+.na {
+  background-color: rgb(128, 128, 128);
+}
+
+.eu-map {
+  background-image: url("/world.svg");
+  background-repeat: no-repeat;
+  background-position: -1650px -240px;
+  background-size: 4400px;
+}
+
+.eu-grid {
+  display: grid;
+  /* width: 375px;
+  height: 225px; */
+  grid-auto-columns: 48px;
+  grid-auto-rows: 48px;
+  grid-template-areas:
+  "eu00 eu01 eu02 eu03 eu04 eu05"
+  "eu06 eu07 eu08 eu09 eu10 eu11"
+  "eu12 eu13 eu14 eu15 eu16 eu17"
+  "eu18 eu19 eu20 eu21 eu22 eu23"
+  "eu24 eu25 eu26 eu27 eu28 eu29"
+  "eu30 eu31 eu32 eu33 eu34 eu35";
+}
+
+.eu {
+  background-color: rgb(128, 128, 128);
+}
+
+.cell {
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 100px;
+    max-height: 100px;
+    border: 1px solid grey;
+    border-radius: 25%;
+    margin: 2px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24pt;
+    position: relative;
+}
+
+.player-marker {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    font-size: 20px;
+    border-radius: 50%;
+    height: 20px;
+    border: 1px solid grey;
+    background: white;
+    overflow:  hidden;
+    display: none;  /* This will be overridden in JavaScript, but start hidden. */
+    justify-content: center;
+    align-items: center;
+}
+
+.na00 { grid-area: na00 }
+.na01 { grid-area: na01 }
+.na02 { grid-area: na02 }
+.na03 { grid-area: na03 }
+.na04 { grid-area: na04 }
+.na05 { grid-area: na05 }
+.na06 { grid-area: na06 }
+.na07 { grid-area: na07 }
+.na08 { grid-area: na08 }
+.na09 { grid-area: na09 }
+.na10 { grid-area: na10 }
+.na11 { grid-area: na11 }
+.na12 { grid-area: na12 }
+.na13 { grid-area: na13 }
+.na14 { grid-area: na14 }
+.na15 { grid-area: na15 }
+.na16 { grid-area: na16 }
+.na17 { grid-area: na17 }
+.na18 { grid-area: na18 }
+.na19 { grid-area: na19 }
+.na20 { grid-area: na20 }
+.na21 { grid-area: na21 }
+.na22 { grid-area: na22 }
+.na23 { grid-area: na23 }
+.na24 { grid-area: na24 }
+.na25 { grid-area: na25 }
+.na26 { grid-area: na26 }
+.na27 { grid-area: na27 }
+.na28 { grid-area: na28 }
+.na29 { grid-area: na29 }
+.na30 { grid-area: na30 }
+.na31 { grid-area: na31 }
+.na32 { grid-area: na32 }
+.na33 { grid-area: na33 }
+.na34 { grid-area: na34 }
+.na35 { grid-area: na35 }
+
+.eu00 { grid-area: eu00 }
+.eu01 { grid-area: eu01 }
+.eu02 { grid-area: eu02 }
+.eu03 { grid-area: eu03 }
+.eu04 { grid-area: eu04 }
+.eu05 { grid-area: eu05 }
+.eu06 { grid-area: eu06 }
+.eu07 { grid-area: eu07 }
+.eu08 { grid-area: eu08 }
+.eu09 { grid-area: eu09 }
+.eu10 { grid-area: eu10 }
+.eu11 { grid-area: eu11 }
+.eu12 { grid-area: eu12 }
+.eu13 { grid-area: eu13 }
+.eu14 { grid-area: eu14 }
+.eu15 { grid-area: eu15 }
+.eu16 { grid-area: eu16 }
+.eu17 { grid-area: eu17 }
+.eu18 { grid-area: eu18 }
+.eu19 { grid-area: eu19 }
+.eu20 { grid-area: eu20 }
+.eu21 { grid-area: eu21 }
+.eu22 { grid-area: eu22 }
+.eu23 { grid-area: eu23 }
+.eu24 { grid-area: eu24 }
+.eu25 { grid-area: eu25 }
+.eu26 { grid-area: eu26 }
+.eu27 { grid-area: eu27 }
+.eu28 { grid-area: eu28 }
+.eu29 { grid-area: eu29 }
+.eu30 { grid-area: eu30 }
+.eu31 { grid-area: eu31 }
+.eu32 { grid-area: eu32 }
+.eu33 { grid-area: eu33 }
+.eu34 { grid-area: eu34 }
+.eu35 { grid-area: eu35 }
