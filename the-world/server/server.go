@@ -12,7 +12,7 @@ import (
 
 	_ "embed"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 //go:embed connections.json
@@ -46,7 +46,7 @@ var db *sql.DB
 
 func initDatabase() {
 	var err error
-	db, err = sql.Open("sqlite3", "./cells.db")
+	db, err = sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
 	if err != nil {
 		log.Fatalf("Failed to open the SQLite database: %v", err)
 	}
@@ -84,7 +84,7 @@ func initDatabase() {
 
 	for cell, destinations := range connections["connections"] {
 		for _, dest := range destinations {
-			_, err = tx.Exec(`INSERT INTO connections (rownum, src, dest) VALUES (?, ?, ?)`, rownum, cell, dest)
+			_, err = tx.Exec(`INSERT INTO connections (rownum, src, dest) VALUES ($1, $2, $3)`, rownum, cell, dest)
 
 			if err != nil {
 				log.Fatalf("Failed to insert connection %s -> %s: %v", cell, dest, err)
@@ -113,13 +113,13 @@ func visitCell(ctx context.Context, cellName string, smiley string, region strin
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET smiley=?`, cellName, smiley, smiley)
+	_, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, cellName, smiley, smiley)
 
 	if err != nil {
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES (?, ?, ?)`, cellName, region, now.UnixMilli())
+	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, cellName, region, now.UnixMilli())
 
 	if err != nil {
 		return fmt.Errorf("could not upsert visitor: %w", err)
@@ -196,7 +196,7 @@ func cellHandler(w http.ResponseWriter, r *http.Request) {
 func handleGetCell(w http.ResponseWriter, r *http.Request, cellName string) {
 	var smiley string
 
-	err := db.QueryRow(`SELECT smiley FROM cells WHERE name = ?`, cellName).Scan(&smiley)
+	err := db.QueryRow(`SELECT smiley FROM cells WHERE name = $1`, cellName).Scan(&smiley)
 	if err == sql.ErrNoRows {
 		smiley = "neutral"
 	} else if err != nil {
@@ -206,7 +206,7 @@ func handleGetCell(w http.ResponseWriter, r *http.Request, cellName string) {
 
 	recents, err := getVisitorCounts(cellName, `
         SELECT region,count(region) FROM
-            (SELECT region FROM visits WHERE cell_name=?
+            (SELECT region FROM visits WHERE cell_name = $1
                 ORDER BY timestamp DESC LIMIT 10)
             GROUP BY region;
     `)
@@ -217,7 +217,7 @@ func handleGetCell(w http.ResponseWriter, r *http.Request, cellName string) {
 	}
 
 	totals, err := getVisitorCounts(cellName, `
-        SELECT region,count(region) FROM visits WHERE cell_name=?
+        SELECT region,count(region) FROM visits WHERE cell_name = $1
              GROUP BY region;
     `)
 
@@ -227,7 +227,7 @@ func handleGetCell(w http.ResponseWriter, r *http.Request, cellName string) {
 	}
 	// fmt.Printf("GET %s: smiley %s recents %v totals %v\n", cellName, smiley, recents, totals)
 
-	rows, err := db.Query("SELECT dest FROM connections WHERE src = ?", cellName)
+	rows, err := db.Query("SELECT dest FROM connections WHERE src = $1", cellName)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not fetch connections: %v", err), http.StatusInternalServerError)
 		return

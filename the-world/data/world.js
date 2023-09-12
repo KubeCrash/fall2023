@@ -61,7 +61,7 @@ class Player {
         if (!this.cellSet.isInitialized()) {
             this.logger.info(`Player ${this.country} WAIT...`)
 
-            setTimeout(() => { this.init() }, Math.random() * 1000)
+            setTimeout(() => { this.init() }, Math.random() * 100)
             return
         }
 

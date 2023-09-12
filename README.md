@@ -10,19 +10,32 @@ data in SQLite. To play with it:
 
 1. In one shell window:
 
-    ```
-    cd the-world/server
-    go run .
-    ```
+``` sh
+cockroach demo --global --no-example-database --nodes 9
+```
+
+And once in the CockroachDB shell:
+
+``` sql
+CREATE USER world_service WITH PASSWORD 'EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk';
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO world_service;
+```
 
 2. In a second window:
 
-    ```
-    cd the-world/data
-    python -m http.server 8080
-    ```
+``` sh
+cd the-world/server
+go run .
+```
 
-3. Finally, open a web browser to `http://localhost:8080/`. Watch the little
+3. In a third window:
+
+``` sh
+cd the-world/data
+python -m http.server 8081
+```
+
+4. Finally, open a web browser to `http://localhost:8081/`. Watch the little
    flags move around and leave trails of smileys.
 
 The US and Canadian flags will turn cells more red. The German and Spanish
@@ -33,10 +46,9 @@ to cross the Atlantic.
 To reset everything:
 
 - kill the server
-- `rm the-world/server/cells.db*`
+- stop cockroach (the `demo` command doesn't persist anything)
+- start cockroach
 - restart the server
-
-The server will populate `cells.db` as needed when restarting.
 
 Finally, the scripts in `the-world/hack` are the basis for some of the more
 irritatingly verbose bits.
