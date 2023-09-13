@@ -20,7 +20,8 @@ And once in the CockroachDB shell, execute the script in create.sql.
 
 ``` sh
 cd the-world/server
-CONNECTION_STRING=postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow \
+
+CONNECTION_STRING=postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/the_world?sslmode=allow \
    go run .
 ```
 

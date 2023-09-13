@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -23,40 +24,42 @@ func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
 	// I'm guessing that there's a better way to do this.
 
 	stmt := `
-        SELECT
-            name,
-            smiley,
-            y.region as recent_region,
-            y.count as recent_count,
-            z.region as total_region,
-            z.count as total_count
-        FROM cells
-        JOIN (
-            SELECT
-                x.cell_name as cell_name,
-                x.region as region,
-                count(x.region) as count
-            FROM (
-                SELECT
-                    ROW_NUMBER() OVER (PARTITION BY cell_name ORDER BY timestamp DESC) AS r,
-                    cell_name,
-                    region
-                FROM
-                    visits
-            ) x
-            WHERE x.r <= 10
-            GROUP BY cell_name, region
-        ) y ON name = y.cell_name
-        JOIN (
-            SELECT
-                cell_name,
-                region,
-                count(region) as count
-            FROM
-                visits
-            GROUP BY cell_name, region
-        ) z ON (name = z.cell_name) AND (y.region = z.region)
-    `
+		WITH
+			y AS (
+				SELECT
+					x.cell_name as cell_name,
+					x.crdb_region as region,
+					count(x.crdb_region) as count
+				FROM (
+					SELECT
+						ROW_NUMBER() OVER (PARTITION BY cell_name ORDER BY timestamp DESC) AS r,
+						cell_name,
+						crdb_region
+					FROM
+						visits
+				) x
+				WHERE x.r <= 10
+				GROUP BY cell_name, crdb_region
+			),
+			z AS (
+				SELECT
+					cell_name,
+					crdb_region,
+					count(crdb_region) as count
+				FROM
+					visits
+				GROUP BY cell_name, crdb_region
+			)
+		SELECT
+			name,
+			smiley,
+			y.region as recent_region,
+			y.count as recent_count,
+			z.crdb_region as total_region,
+			z.count as total_count
+		FROM cells c
+		JOIN y ON c.name = y.cell_name
+		JOIN z ON (c.name = z.cell_name) AND (y.region = z.crdb_region)`
 
 	rows, err := s.db.Query(stmt)
 	if err != nil {
@@ -144,18 +147,20 @@ func getCell(db *sql.DB, name string) (*model.Cell, error) {
 	}
 
 	recents, err := getVisitorCounts(db, name, `
-        SELECT region, count(region) FROM
-            (SELECT region FROM visits WHERE cell_name = $1
+        SELECT db_to_user_region(crdb_region), count(crdb_region) FROM
+            (SELECT crdb_region FROM visits WHERE cell_name = $1
                 ORDER BY timestamp DESC LIMIT 10)
-            GROUP BY region`)
+            GROUP BY crdb_region`)
 
 	if err != nil {
 		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
 	}
 
 	totals, err := getVisitorCounts(db, name, `
-        SELECT region, count(region) FROM visits WHERE cell_name = $1
-             GROUP BY region`)
+        SELECT db_to_user_region(crdb_region), count(crdb_region)
+				FROM visits
+				WHERE cell_name = $1
+        GROUP BY crdb_region`)
 
 	if err != nil {
 		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
@@ -193,7 +198,8 @@ func (s *Server) visitHandler(c *fiber.Ctx) error {
 	region := c.Query("region")
 
 	if err := visitCell(c.Context(), s.db, name, smiley, region); err != nil {
-		return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Database error: %v", err))
+		log.Printf("database error: %v", err)
+		return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("database error: %v", err))
 	}
 
 	cell, err := getCell(s.db, name)
@@ -211,20 +217,26 @@ func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) err
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
+		log.Printf("could not begin txn: %v", err)
 		return fmt.Errorf("could not begin txn: %w", err)
 	}
 
 	defer tx.Rollback()
 
-	if _, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, name, smiley, smiley); err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley, crdb_region)
+																	 VALUES ($1, $2, user_to_db_region($3))
+																	 ON CONFLICT(name) DO UPDATE SET smiley = $2`, name, smiley, region); err != nil {
+		log.Printf("could not upsert smiley: %v", err)
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	if _, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, name, region, now); err != nil {
+	if _, err = tx.Exec(`INSERT INTO visits (cell_name, crdb_region, timestamp) VALUES ($1, user_to_db_region($2), $3)`, name, region, now); err != nil {
+		log.Printf("could not upsert visitor: %v", err)
 		return fmt.Errorf("could not upsert visitor: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
+		log.Printf("could not commit txn: %v", err)
 		return fmt.Errorf("could not commit txn: %w", err)
 	}
 
@@ -234,6 +246,8 @@ func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) err
 func getVisitorCounts(db *sql.DB, name string, stmt string) (map[string]int, error) {
 	rows, err := db.Query(stmt, name)
 	if err != nil {
+		log.Printf("could not run query: %v", err)
+		log.Println(stmt)
 		return nil, fmt.Errorf("could not run query: %w", err)
 	}
 	defer rows.Close()
@@ -245,6 +259,7 @@ func getVisitorCounts(db *sql.DB, name string, stmt string) (map[string]int, err
 		var count int
 
 		if err = rows.Scan(&region, &count); err != nil {
+			log.Printf("could not scan row: %v", err)
 			return nil, fmt.Errorf("could not scan row: %w", err)
 		}
 
