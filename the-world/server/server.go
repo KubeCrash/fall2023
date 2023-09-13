@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	_ "embed"
@@ -15,7 +16,12 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
+	connectionString, ok := os.LookupEnv("CONNECTION_STRING")
+	if !ok {
+		log.Fatalf("missing CONNECTION_STRING env var")
+
+	}
+	db, err := sql.Open("pgx", connectionString)
 	if err != nil {
 		log.Fatalf("Failed to open the SQLite database: %v", err)
 	}
