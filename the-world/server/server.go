@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 
-	_ "embed"
-
 	"github.com/buoyantio/flag-demo/server/server"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
