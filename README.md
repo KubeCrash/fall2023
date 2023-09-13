@@ -23,6 +23,13 @@ cd the-world/server
 go run .
 ```
 
+Sample requests
+
+``` sh
+curl -s "http://localhost:8888/cells"
+curl -s "http://localhost:8888/cells/na10"
+```
+
 3. In a third window:
 
 ``` sh

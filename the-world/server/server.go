@@ -3,19 +3,36 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	_ "embed"
 
+	"github.com/gofiber/fiber/v2"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type Cell struct {
+func main() {
+	db, err := sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
+	if err != nil {
+		log.Fatalf("Failed to open the SQLite database: %v", err)
+	}
+	defer db.Close()
+
+	router := fiber.New()
+	router.Use(cors)
+
+	router.Get("/cells", getAllCellsHandler(db))
+	router.Get("/cells/:name", getCellHandler(db))
+	router.Post("/cells/:name/visit", visitHandler(db))
+
+	fmt.Printf("Listening on port 8888...\n")
+	log.Fatal(router.Listen(":8888"))
+}
+
+type cell struct {
 	Name         string         `json:"name"`
 	Smiley       string         `json:"smiley"`
 	Recents      map[string]int `json:"recents"`
@@ -23,12 +40,10 @@ type Cell struct {
 	Destinations []string       `json:"destinations"`
 }
 
-var db *sql.DB
-
-func visitCell(ctx context.Context, cellName string, smiley string, region string) error {
+func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) error {
 	now := time.Now()
 
-	fmt.Printf("%s: cell %s, smiley %s, region %s\n", now, cellName, smiley, region)
+	fmt.Printf("%s: cell %s, smiley %s, region %s\n", now, name, smiley, region)
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -37,13 +52,13 @@ func visitCell(ctx context.Context, cellName string, smiley string, region strin
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, cellName, smiley, smiley)
+	_, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, name, smiley, smiley)
 
 	if err != nil {
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, cellName, region, now)
+	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, name, region, now)
 
 	if err != nil {
 		return fmt.Errorf("could not upsert visitor: %w", err)
@@ -58,135 +73,92 @@ func visitCell(ctx context.Context, cellName string, smiley string, region strin
 	return nil
 }
 
-func handleCORS(w http.ResponseWriter, r *http.Request) bool {
-	// Set CORS headers
-	origin := r.Header.Get("Origin")
+func getCellHandler(db *sql.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		name := c.Params("name")
 
-	if origin == "" {
-		origin = "*"
-	}
-
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Cache-Control, X-Custom-Header")
-
-	// Handle pre-flight OPTIONS request
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return true
-	}
-
-	return false
-}
-
-func cellHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"), "/")
-
-	segments := strings.Split(path, "/")
-
-	if handleCORS(w, r) {
-		return
-	}
-
-	if (len(segments) < 2) ||
-		(len(segments) > 3) ||
-		(segments[0] != "cell") {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	cellName := segments[1]
-
-	if (len(segments) == 2) || (segments[2] == "") {
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
+		cell, err := getCell(db, name)
+		if err != nil {
+			return err
 		}
 
-		handleGetCell(w, r, cellName)
-	} else if segments[2] == "visit" {
-		if r.Method != "POST" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		handleVisit(w, r, cellName)
-	} else {
-		http.Error(w, "Not found", http.StatusNotFound)
+		return c.JSON(cell)
 	}
 }
 
-func handleGetCell(w http.ResponseWriter, r *http.Request, cellName string) {
+func getCell(db *sql.DB, name string) (*cell, error) {
 	var smiley string
-
-	err := db.QueryRow(`SELECT smiley FROM cells WHERE name = $1`, cellName).Scan(&smiley)
-	if err == sql.ErrNoRows {
+	if err := db.QueryRow(`SELECT smiley FROM cells WHERE name = $1`, name).Scan(&smiley); err == sql.ErrNoRows {
 		smiley = "neutral"
 	} else if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
+		return nil, fiber.NewError(http.StatusInternalServerError, "Database error")
 	}
 
-	recents, err := getVisitorCounts(cellName, `
-        SELECT region,count(region) FROM
+	recents, err := getVisitorCounts(db, name, `
+        SELECT region, count(region) FROM
             (SELECT region FROM visits WHERE cell_name = $1
                 ORDER BY timestamp DESC LIMIT 10)
-            GROUP BY region;
-    `)
+            GROUP BY region`)
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not fetch recents: %v", err), http.StatusInternalServerError)
-		return
+		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
 	}
 
-	totals, err := getVisitorCounts(cellName, `
-        SELECT region,count(region) FROM visits WHERE cell_name = $1
-             GROUP BY region;
-    `)
+	totals, err := getVisitorCounts(db, name, `
+        SELECT region, count(region) FROM visits WHERE cell_name = $1
+             GROUP BY region`)
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not fetch recents: %v", err), http.StatusInternalServerError)
-		return
+		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
 	}
-	// fmt.Printf("GET %s: smiley %s recents %v totals %v\n", cellName, smiley, recents, totals)
 
-	rows, err := db.Query("SELECT dest FROM connections WHERE src = $1", cellName)
+	rows, err := db.Query("SELECT dest FROM connections WHERE src = $1", name)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not fetch connections: %v", err), http.StatusInternalServerError)
-		return
+		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch connections: %v", err))
 	}
-
 	defer rows.Close()
 
 	dests := make([]string, 0, 2) // every cell has at least two connections
 
 	for rows.Next() {
 		var dest string
-
-		err = rows.Scan(&dest)
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Could not scan connection row: %v", err), http.StatusInternalServerError)
-			return
+		if err = rows.Scan(&dest); err != nil {
+			return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not scan connection row: %v", err))
 		}
 
 		dests = append(dests, dest)
 	}
 
-	cell := &Cell{
-		Name:         cellName,
+	return &cell{
+		Name:         name,
 		Recents:      recents,
 		Totals:       totals,
 		Smiley:       smiley,
 		Destinations: dests,
-	}
-
-	json.NewEncoder(w).Encode(cell)
+	}, nil
 }
 
-func getVisitorCounts(cellName string, stmt string) (map[string]int, error) {
-	rows, err := db.Query(stmt, cellName)
+func visitHandler(db *sql.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		name := c.Params("name")
+		smiley := c.Query("smiley")
+		region := c.Query("region")
+
+		if err := visitCell(c.Context(), db, name, smiley, region); err != nil {
+			return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Database error: %v", err))
+		}
+
+		cell, err := getCell(db, name)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(cell)
+	}
+}
+
+func getVisitorCounts(db *sql.DB, name string, stmt string) (map[string]int, error) {
+	rows, err := db.Query(stmt, name)
 	if err != nil {
 		return nil, fmt.Errorf("could not run query: %w", err)
 	}
@@ -211,45 +183,20 @@ func getVisitorCounts(cellName string, stmt string) (map[string]int, error) {
 	return counts, nil
 }
 
-func handleVisit(w http.ResponseWriter, r *http.Request, cellName string) {
-	// fmt.Printf("POST visit: URL %s\n", r.URL)
-	// fmt.Printf("POST visit: Query %v\n", r.URL.Query())
-
-	smiley := r.URL.Query().Get("smiley")
-	region := r.URL.Query().Get("region")
-
-	err := visitCell(r.Context(), cellName, smiley, region)
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	handleGetCell(w, r, cellName)
-}
-
 // allCellHandler returns the smiley and visitor counts for all cells, as a JSON dictionary.
-func allCellsHandler(w http.ResponseWriter, r *http.Request) {
-	if handleCORS(w, r) {
-		return
-	}
+func getAllCellsHandler(db *sql.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Yes, this is some hairy SQL. It joins the cells table with two separate
+		// subqueries: the first one partitions the visits table by cell name,
+		// then counts the regions in the 10 most recent visits for each cell, and
+		// the second one does the same without the partition, so it gets the
+		// per-cell totals.
+		//
+		// The most useful source when I was figuring out how to do this was
+		// https://stackoverflow.com/questions/28119176/select-top-n-record-from-each-group-sqlite.
+		// I'm guessing that there's a better way to do this.
 
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Yes, this is some hairy SQL. It joins the cells table with two separate
-	// subqueries: the first one partitions the visits table by cell name,
-	// then counts the regions in the 10 most recent visits for each cell, and
-	// the second one does the same without the partition, so it gets the
-	// per-cell totals.
-	//
-	// The most useful source when I was figuring out how to do this was
-	// https://stackoverflow.com/questions/28119176/select-top-n-record-from-each-group-sqlite.
-	// I'm guessing that there's a better way to do this.
-
-	stmt := `
+		stmt := `
         SELECT
             name,
             smiley,
@@ -285,95 +232,89 @@ func allCellsHandler(w http.ResponseWriter, r *http.Request) {
         ) z ON (name = z.cell_name) AND (y.region = z.region)
     `
 
-	rows, err := db.Query(stmt)
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	cells := make(map[string]*Cell)
-
-	for rows.Next() {
-		var name string
-		var smiley string
-		var recent_region string
-		var recent_count int
-		var total_region string
-		var total_count int
-
-		err = rows.Scan(&name, &smiley, &recent_region, &recent_count, &total_region, &total_count)
+		rows, err := db.Query(stmt)
 		if err != nil {
 			fmt.Printf("error: %v\n", err)
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
+			return fiber.NewError(http.StatusInternalServerError, "Database error")
+		}
+		defer rows.Close()
+
+		cells := make(map[string]*cell)
+
+		for rows.Next() {
+			var name string
+			var smiley string
+			var recent_region string
+			var recent_count int
+			var total_region string
+			var total_count int
+
+			if err = rows.Scan(&name, &smiley, &recent_region, &recent_count, &total_region, &total_count); err != nil {
+				fmt.Printf("error: %v\n", err)
+				return fiber.NewError(http.StatusInternalServerError, "Database error")
+			}
+
+			if _, ok := cells[name]; !ok {
+				cells[name] = &cell{
+					Name:    name,
+					Recents: make(map[string]int),
+					Totals:  make(map[string]int),
+					Smiley:  smiley,
+				}
+			}
+
+			cell := cells[name]
+			cell.Recents[recent_region] = recent_count
+			cell.Totals[total_region] = total_count
 		}
 
-		if _, ok := cells[name]; !ok {
-			cells[name] = &Cell{
-				Name:    name,
-				Recents: make(map[string]int),
-				Totals:  make(map[string]int),
-				Smiley:  smiley,
+		// After all that, we also need to find all the cells for which we have
+		// destinations, but no visits, because the JavaScript code needs to know
+		// about all the possible cells up front.
+		if rows, err = db.Query(`SELECT distinct(src) FROM connections WHERE src NOT IN (SELECT distinct(cell_name) FROM visits)`); err != nil {
+			fmt.Printf("error: %v\n", err)
+			return fiber.NewError(http.StatusInternalServerError, "Database error")
+		}
+
+		for rows.Next() {
+			var name string
+			if err = rows.Scan(&name); err != nil {
+				fmt.Printf("error: %v\n", err)
+				return fiber.NewError(http.StatusInternalServerError, "Database error")
+			}
+
+			if _, ok := cells[name]; !ok {
+				cells[name] = &cell{
+					Name:    name,
+					Recents: make(map[string]int),
+					Totals:  make(map[string]int),
+					Smiley:  "",
+				}
 			}
 		}
 
-		cell := cells[name]
-		cell.Recents[recent_region] = recent_count
-		cell.Totals[total_region] = total_count
+		fmt.Printf("GET all cells: %v\n", cells)
+
+		return c.JSON(cells)
 	}
-
-	// After all that, we also need to find all the cells for which we have
-	// destinations, but no visits, because the JavaScript code needs to know
-	// about all the possible cells up front.
-	rows, err = db.Query(`SELECT distinct(src) FROM connections WHERE src NOT IN (SELECT distinct(cell_name) FROM visits)`)
-
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		err = rows.Scan(&name)
-
-		if err != nil {
-			fmt.Printf("error: %v\n", err)
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
-		}
-
-		if _, ok := cells[name]; !ok {
-			cells[name] = &Cell{
-				Name:    name,
-				Recents: make(map[string]int),
-				Totals:  make(map[string]int),
-				Smiley:  "",
-			}
-		}
-	}
-
-	fmt.Printf("GET all cells: %v\n", cells)
-
-	json.NewEncoder(w).Encode(cells)
 }
 
-func main() {
-	var err error
-	db, err = sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
-	if err != nil {
-		log.Fatalf("Failed to open the SQLite database: %v", err)
+func cors(c *fiber.Ctx) error {
+	origin := c.Get("Origin")
+
+	if origin == "" {
+		origin = "*"
 	}
 
-	defer db.Close()
+	c.Set("Access-Control-Allow-Origin", origin)
+	c.Set("Access-Control-Allow-Credentials", "true")
+	c.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+	c.Set("Access-Control-Allow-Headers", "Content-Type, Cache-Control, X-Custom-Header")
 
-	http.HandleFunc("/cell/", cellHandler)
-	http.HandleFunc("/allcells/", allCellsHandler)
+	// Handle pre-flight OPTIONS request
+	if c.Method() == "OPTIONS" {
+		return nil
+	}
 
-	fmt.Printf("Listening on port 8888...\n")
-	log.Fatal(http.ListenAndServe(":8888", nil))
+	return c.Next()
 }
