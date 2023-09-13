@@ -14,12 +14,7 @@ data in SQLite. To play with it:
 cockroach demo --global --no-example-database --nodes 9
 ```
 
-And once in the CockroachDB shell:
-
-``` sql
-CREATE USER world_service WITH PASSWORD 'EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk';
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO world_service;
-```
+And once in the CockroachDB shell, execute the script in create.sql.
 
 2. In a second window:
 

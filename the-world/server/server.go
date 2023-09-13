@@ -15,9 +15,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-//go:embed connections.json
-var connectionsJSON string
-
 type Cell struct {
 	Name         string         `json:"name"`
 	Smiley       string         `json:"smiley"`
@@ -26,80 +23,7 @@ type Cell struct {
 	Destinations []string       `json:"destinations"`
 }
 
-var (
-	Smilies = map[string]string{
-		"confused":  "&#x1F615;",
-		"cursing":   "&#x1F92C;",
-		"kaboom":    "&#x1F92F;",
-		"neutral":   "&#x1F610;",
-		"screaming": "&#x1F631;",
-		"sleeping":  "&#x1F634;",
-		"smiling":   "&#x1F603;",
-		"thinking":  "&#x1F914;",
-		"tongue":    "&#x1F61B;",
-		"upset":     "&#x1F62C;",
-		"yay":       "&#x1F389;",
-	}
-)
-
 var db *sql.DB
-
-func initDatabase() {
-	var err error
-	db, err = sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
-	if err != nil {
-		log.Fatalf("Failed to open the SQLite database: %v", err)
-	}
-
-	var connections map[string]map[string][]string
-	err = json.Unmarshal([]byte(connectionsJSON), &connections)
-
-	if err != nil {
-		log.Fatalf("Failed to parse connections.json: %v", err)
-	}
-
-	// Create tables if they don't exist
-	statements := []string{
-		`DROP TABLE IF EXISTS connections`,
-		`CREATE TABLE connections (rownum INTEGER PRIMARY KEY, src TEXT, dest TEXT)`,
-		`CREATE TABLE IF NOT EXISTS cells (name TEXT PRIMARY KEY, smiley TEXT)`,
-		`CREATE TABLE IF NOT EXISTS visits (cell_name TEXT, region TEXT, timestamp INTEGER)`,
-	}
-
-	for _, stmt := range statements {
-		_, err := db.Exec(stmt)
-		if err != nil {
-			log.Fatalf("Failed to create table: %v", err)
-		}
-	}
-
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		log.Fatalf("Failed to begin transaction: %v", err)
-	}
-
-	defer tx.Rollback()
-
-	rownum := 0
-
-	for cell, destinations := range connections["connections"] {
-		for _, dest := range destinations {
-			_, err = tx.Exec(`INSERT INTO connections (rownum, src, dest) VALUES ($1, $2, $3)`, rownum, cell, dest)
-
-			if err != nil {
-				log.Fatalf("Failed to insert connection %s -> %s: %v", cell, dest, err)
-			}
-
-			rownum++
-		}
-	}
-
-	err = tx.Commit()
-
-	if err != nil {
-		log.Fatalf("Failed to commit transaction: %v", err)
-	}
-}
 
 func visitCell(ctx context.Context, cellName string, smiley string, region string) error {
 	now := time.Now()
@@ -119,7 +43,7 @@ func visitCell(ctx context.Context, cellName string, smiley string, region strin
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, cellName, region, now.UnixMilli())
+	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, cellName, region, now)
 
 	if err != nil {
 		return fmt.Errorf("could not upsert visitor: %w", err)
@@ -439,7 +363,12 @@ func allCellsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	initDatabase()
+	var err error
+	db, err = sql.Open("pgx", "postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/defaultdb?sslmode=allow")
+	if err != nil {
+		log.Fatalf("Failed to open the SQLite database: %v", err)
+	}
+
 	defer db.Close()
 
 	http.HandleFunc("/cell/", cellHandler)
