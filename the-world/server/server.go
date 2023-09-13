@@ -52,21 +52,15 @@ func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) err
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, name, smiley, smiley)
-
-	if err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley) VALUES ($1, $2) ON CONFLICT(name) DO UPDATE SET smiley = $3`, name, smiley, smiley); err != nil {
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	_, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, name, region, now)
-
-	if err != nil {
+	if _, err = tx.Exec(`INSERT INTO visits (cell_name, region, timestamp) VALUES ($1, $2, $3)`, name, region, now); err != nil {
 		return fmt.Errorf("could not upsert visitor: %w", err)
 	}
 
-	err = tx.Commit()
-
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("could not commit txn: %w", err)
 	}
 
@@ -162,7 +156,6 @@ func getVisitorCounts(db *sql.DB, name string, stmt string) (map[string]int, err
 	if err != nil {
 		return nil, fmt.Errorf("could not run query: %w", err)
 	}
-
 	defer rows.Close()
 
 	counts := make(map[string]int)
@@ -171,9 +164,7 @@ func getVisitorCounts(db *sql.DB, name string, stmt string) (map[string]int, err
 		var region string
 		var count int
 
-		err = rows.Scan(&region, &count)
-
-		if err != nil {
+		if err = rows.Scan(&region, &count); err != nil {
 			return nil, fmt.Errorf("could not scan row: %w", err)
 		}
 
