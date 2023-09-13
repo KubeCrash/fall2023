@@ -112,7 +112,7 @@ class Player {
         this.show(true)
 
         // Next, post our smiley to the database.
-        let baseURL = `http://localhost:8888/cell/${this.cell}/visit`
+        let baseURL = `http://localhost:8888/cells/${this.cell}/visit`
         let param = `smiley=${smiley}&region=${this.region}`
 
         new Request("POST", baseURL, param, `player ${this.country}`, (r) => {
@@ -278,7 +278,7 @@ class CellSet {
     }
 
     update() {
-        new Request("GET", "http://localhost:8888/allcells/", "", "world", (r) => {
+        new Request("GET", "http://localhost:8888/cells/", "", "world", (r) => {
             if (r.ok) {
                 let world = r.response
 
