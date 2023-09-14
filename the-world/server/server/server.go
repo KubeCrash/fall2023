@@ -22,6 +22,7 @@ func New(db *sql.DB) *Server {
 	router := fiber.New()
 	router.Use(middleware.CORS)
 
+	router.Static("/", "./ui")
 	router.Get("/cells", svr.getAllCellsHandler)
 	router.Get("/cells/:name", svr.getCellHandler)
 	router.Post("/cells/:name/visit", svr.visitHandler)
