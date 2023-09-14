@@ -56,3 +56,21 @@ To reset everything:
 
 Finally, the scripts in `the-world/hack` are the basis for some of the more
 irritatingly verbose bits.
+
+### Docker
+
+Create a docker image
+
+``` sh
+(cd server && docker build -t the-world .)
+```
+
+Run the docker image
+
+``` sh
+docker run --rm -it \
+   --name the-world \
+   -p 8888:8888 \
+   -e CONNECTION_STRING="postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@host.docker.internal:26257/the_world?sslmode=allow" \
+      the-world
+```
