@@ -11,17 +11,21 @@ data in SQLite. To play with it:
 1. In one shell window:
 
 ``` sh
-cockroach demo --global --no-example-database --nodes 9
+cockroach demo --insecure --no-example-database --nodes 9
 ```
 
-And once in the CockroachDB shell, execute the script in create.sql.
+Execute the script in create.sql:
+
+``` sql
+cockroach sql --url "postgres://root@localhost:26257/the_world?sslmode=allow" < the-world/server/create.sql
+```
 
 2. In a second window:
 
 ``` sh
 cd the-world/server
 
-CONNECTION_STRING=postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/the_world?sslmode=allow \
+CONNECTION_STRING=postgres://root@localhost:26257/the_world?sslmode=allow \
    go run .
 ```
 
@@ -71,6 +75,6 @@ Run the docker image
 docker run --rm -it \
    --name the-world \
    -p 8888:8888 \
-   -e CONNECTION_STRING="postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@host.docker.internal:26257/the_world?sslmode=allow" \
+   -e CONNECTION_STRING="postgres://root@host.docker.internal:26257/the_world?sslmode=allow" \
       the-world
 ```
