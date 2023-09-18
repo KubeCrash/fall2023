@@ -5,6 +5,11 @@ This is the World demo.
 **It is very much WIP.** In particular, there's no K8s code at all in here
 yet.
 
+You'll need `kubectl`, `linkerd`, and `step` to run this.
+
+linkerd — https://linkerd.io/2/getting-started/
+step — https://smallstep.com/docs/step-cli/installation
+
 What is in here is a single-page web app and a backing Go server that stores
 data in SQLite. To play with it:
 

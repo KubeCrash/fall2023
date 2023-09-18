@@ -112,7 +112,7 @@ class Player {
         this.show(true)
 
         // Next, post our smiley to the database.
-        let baseURL = `http://localhost:8888/cells/${this.cell}/visit`
+        let baseURL = `/cells/${this.cell}/visit`
         let param = `smiley=${smiley}&region=${this.region}`
 
         new Request("POST", baseURL, param, `player ${this.country}`, (r) => {
