@@ -79,3 +79,52 @@ docker run --rm -it \
    -e CONNECTION_STRING="postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@host.docker.internal:26257/the_world?sslmode=allow" \
       the-world
 ```
+
+### Kubernetes
+
+Create the cluster with Linkerd and Emissary
+
+``` sh
+bash ./create-clusters.sh
+bash ./setup-linkerd.sh
+bash ./setup-emissary.sh
+```
+
+Create namespaces for CockroachDB to use in each of the clusters
+
+``` sh
+kubectl create namespace us-east --context us-east
+kubectl create namespace us-west --context us-west
+kubectl create namespace eu --context eu
+```
+
+Install CockroachDB into the clusters
+
+``` sh
+kubectl apply -f the-world/k8s/cockroachdb-eu.yaml -n eu --context eu
+kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
+kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west
+```
+
+Initialise CockroachDB
+
+``` sh
+kubectl exec \
+   --context eu \
+   --namespace eu \
+   -it cockroachdb-0 \
+   -- /cockroach/cockroach init \
+   --certs-dir=/cockroach/cockroach-certs
+
+```
+
+### Cleanup
+
+``` sh
+k3d cluster delete us-east
+k3d cluster delete us-west
+k3d cluster delete eu
+
+rm *.crt
+rm *.key
+```
