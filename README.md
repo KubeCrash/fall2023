@@ -117,10 +117,10 @@ Initialise CockroachDB
 ``` sh
 kubectl exec \
    --context eu-central \
-   --namespace crdb \
    -it cockroachdb-0 \
+   --namespace crdb \
    -- /cockroach/cockroach init \
-   --certs-dir=/cockroach/cockroach-certs
+      -certs-dir=/cockroach/cockroach-certs
 ```
 
 Enter bash shell
