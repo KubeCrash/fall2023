@@ -20,19 +20,19 @@ kubectl create secret \
    generic cockroachdb.client.root \
    --from-file=certs \
    --context us-east \
-   --namespace crdb
+   --namespace us-east
 
 kubectl create secret \
    generic cockroachdb.client.root \
    --from-file=certs \
    --context us-west \
-   --namespace crdb
+   --namespace us-west
 
 kubectl create secret \
    generic cockroachdb.client.root \
    --from-file=certs \
    --context eu-central \
-   --namespace crdb
+   --namespace eu-central
 
 
 cockroach cert create-node \
@@ -50,7 +50,7 @@ kubectl create secret \
    generic cockroachdb.node \
    --from-file=certs \
    --context us-east \
-   --namespace crdb
+   --namespace us-east
 
 rm certs/node.crt
 rm certs/node.key
@@ -71,7 +71,7 @@ kubectl create secret \
    generic cockroachdb.node \
    --from-file=certs \
    --context us-west \
-   --namespace crdb
+   --namespace us-west
 
 rm certs/node.crt
 rm certs/node.key
@@ -92,7 +92,7 @@ kubectl create secret \
    generic cockroachdb.node \
    --from-file=certs \
    --context eu-central \
-   --namespace crdb
+   --namespace eu-central
 
 rm certs/node.crt
 rm certs/node.key

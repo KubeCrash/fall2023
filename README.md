@@ -10,6 +10,8 @@ You'll need `kubectl`, `linkerd`, and `step` to run this.
 linkerd — https://linkerd.io/2/getting-started/
 step — https://smallstep.com/docs/step-cli/installation
 
+### Local
+
 What is in here is a single-page web app and a backing Go server that stores
 data in SQLite. To play with it:
 
@@ -93,9 +95,9 @@ bash ./setup-emissary.sh
 Create namespaces for CockroachDB to use in each of the clusters
 
 ``` sh
-kubectl create namespace crdb --context us-east
-kubectl create namespace crdb --context us-west
-kubectl create namespace crdb --context eu-central
+kubectl create namespace us-east --context us-east
+kubectl create namespace us-west --context us-west
+kubectl create namespace eu-central --context eu-central
 ```
 
 Create certs for the CockroachDB nodes
@@ -107,9 +109,9 @@ bash crdb-certs.sh
 Install CockroachDB into the clusters
 
 ``` sh
-kubectl apply -f the-world/k8s/cockroachdb-eu-central.yaml -n crdb --context eu-central
-kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n crdb --context us-east
-kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n crdb --context us-west
+kubectl apply -f the-world/k8s/cockroachdb-eu-central.yaml -n eu-central --context eu-central
+kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
+kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west
 ```
 
 Initialise CockroachDB
@@ -118,9 +120,9 @@ Initialise CockroachDB
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace crdb \
+   --namespace eu-central \
    -- /cockroach/cockroach init \
-      -certs-dir=/cockroach/cockroach-certs
+      --certs-dir=/cockroach/cockroach-certs
 ```
 
 Enter bash shell
@@ -129,7 +131,7 @@ Enter bash shell
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace crdb \
+   --namespace eu-central \
    -- bash
 ```
 
@@ -139,7 +141,7 @@ Enter SQL shell
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace crdb \
+   --namespace eu-central \
    -- cockroach sql
 
 ```
@@ -154,3 +156,11 @@ k3d cluster delete eu-central
 rm *.crt
 rm *.key
 ```
+
+
+
+
+
+kubectl delete -f the-world/k8s/cockroachdb-eu-central.yaml -n eu-central --context eu-central
+kubectl delete -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
+kubectl delete -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west

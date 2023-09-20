@@ -83,7 +83,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: default
+  namespace: eu-central
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
@@ -99,7 +99,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: default
+  namespace: eu-central
 ---
 
 apiVersion: v1
@@ -179,7 +179,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
-  namespace: crdb
+  namespace: eu-central
 spec:
   serviceName: "cockroachdb"
   replicas: 3
