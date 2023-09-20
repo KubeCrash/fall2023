@@ -29,4 +29,4 @@ install_emissary () {
 
 install_emissary us-east
 install_emissary us-west
-install_emissary eu
+install_emissary eu-central

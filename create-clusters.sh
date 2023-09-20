@@ -20,12 +20,7 @@
 # clear
 
 # Create three K3d clusters that are all on the same flat network. As written,
-# these are single-Node clusters named "us-east", "us-west", and "eu".
-
-# Ditch any old clusters...
-k3d cluster delete us-east &>/dev/null
-k3d cluster delete us-west &>/dev/null
-k3d cluster delete eu &>/dev/null
+# these are single-Node clusters named "us-east", "us-west", and "eu-central".
 
 #@SHOW
 
@@ -39,7 +34,7 @@ k3d cluster create us-east \
     --agents=0 \
     --servers=1 \
     --network=world-network \
-    --k3s-arg '--disable=local-storage,traefik,metrics-server@server:*;agents:*' \
+    --k3s-arg '--disable=traefik,metrics-server@server:*;agents:*' \
     --k3s-arg '--cluster-domain=us-east@server:*' \
     --k3s-arg '--cluster-cidr=10.23.0.0/24@server:*'
 
@@ -49,26 +44,26 @@ k3d cluster create us-west \
     --agents=0 \
     --servers=1 \
     --network=world-network \
-    --k3s-arg '--disable=local-storage,traefik,metrics-server@server:*;agents:*' \
+    --k3s-arg '--disable=traefik,metrics-server@server:*;agents:*' \
     --k3s-arg '--cluster-domain=us-west@server:*' \
     --k3s-arg '--cluster-cidr=10.23.1.0/24@server:*'
 
-# In eu, we map 80 & 443 to 8082 and 8445.
-k3d cluster create eu \
+# In eu-central, we map 80 & 443 to 8082 and 8445.
+k3d cluster create eu-central \
     -p "8082:80@loadbalancer" -p "8445:443@loadbalancer" \
     --agents=0 \
     --servers=1 \
     --network=world-network \
-    --k3s-arg '--disable=local-storage,traefik,metrics-server@server:*;agents:*' \
-    --k3s-arg '--cluster-domain=eu@server:*' \
+    --k3s-arg '--disable=traefik,metrics-server@server:*;agents:*' \
+    --k3s-arg '--cluster-domain=eu-central@server:*' \
     --k3s-arg '--cluster-cidr=10.23.2.0/24@server:*'
 
 kubectl config delete-context us-east >/dev/null 2>&1
 kubectl config rename-context k3d-us-east us-east
 kubectl config delete-context us-west >/dev/null 2>&1
 kubectl config rename-context k3d-us-west us-west
-kubectl config delete-context eu >/dev/null 2>&1
-kubectl config rename-context k3d-eu eu
+kubectl config delete-context eu-central >/dev/null 2>&1
+kubectl config rename-context k3d-eu-central eu-central
 
 # Grab CIDR ranges, and use them to tweak the routing tables on each cluster
 # to allow flat networking.
@@ -76,8 +71,8 @@ useast_cidr=
 useast_router=
 uswest_cidr=
 uswest_router=
-eu_cidr=
-eu_router=
+eu_central_cidr=
+eu_central_router=
 
 REMAINING=60 ;\
 echo "Getting us-east cluster network info..." ;\
@@ -114,33 +109,33 @@ else \
 fi
 
 REMAINING=60 ;\
-echo "Getting eu cluster network info..." ;\
+echo "Getting eu-central cluster network info..." ;\
 while true; do \
-    eu_cidr=$(kubectl --context eu get node k3d-eu-server-0 -o jsonpath='{.spec.podCIDR}') ;\
-    eu_router=$(kubectl --context eu get node k3d-eu-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}') ;\
-    if [ -n "$eu_cidr" -a -n "$eu_router" ]; then break; fi ;\
+    eu_central_cidr=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.spec.podCIDR}') ;\
+    eu_central_router=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}') ;\
+    if [ -n "$eu-central_cidr" -a -n "$eu-central_router" ]; then break; fi ;\
     REMAINING=$(( $REMAINING - 1 )) ;\
     printf "." ;\
     sleep 1 ;\
 done ;\
 if [ $REMAINING -eq 0 ]; then \
-    echo "Timed out waiting for eu network info" ;\
+    echo "Timed out waiting for eu-central network info" ;\
     exit 1 ;\
 else \
     printf "\n" ;\
 fi
 
-echo "us-east cluster: route ${uswest_cidr} via ${uswest_router}, ${eu_cidr} via ${eu_router}"
+echo "us-east cluster: route ${uswest_cidr} via ${uswest_router}, ${eu_central_cidr} via ${eu_central_router}"
 docker exec -it k3d-us-east-server-0 ip route add ${uswest_cidr} via ${uswest_router}
-docker exec -it k3d-us-east-server-0 ip route add ${eu_cidr} via ${eu_router}
+docker exec -it k3d-us-east-server-0 ip route add ${eu_central_cidr} via ${eu_central_router}
 
-echo "us-west cluster: route ${useast_cidr} via ${useast_router}, ${eu_cidr} via ${eu_router}"
+echo "us-west cluster: route ${useast_cidr} via ${useast_router}, ${eu_central_cidr} via ${eu_central_router}"
 docker exec -it k3d-us-west-server-0 ip route add ${useast_cidr} via ${useast_router}
-docker exec -it k3d-us-west-server-0 ip route add ${eu_cidr} via ${eu_router}
+docker exec -it k3d-us-west-server-0 ip route add ${eu_central_cidr} via ${eu_central_router}
 
-echo "eu cluster: route ${useast_cidr} via ${useast_router}, ${uswest_cidr} via ${uswest_router}"
-docker exec -it k3d-eu-server-0 ip route add ${useast_cidr} via ${useast_router}
-docker exec -it k3d-eu-server-0 ip route add ${uswest_cidr} via ${uswest_router}
+echo "eu-central cluster: route ${useast_cidr} via ${useast_router}, ${uswest_cidr} via ${uswest_router}"
+docker exec -it k3d-eu-central-server-0 ip route add ${useast_cidr} via ${useast_router}
+docker exec -it k3d-eu-central-server-0 ip route add ${uswest_cidr} via ${uswest_router}
 
 #@SKIP
 #@wait

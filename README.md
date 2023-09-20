@@ -93,28 +93,54 @@ bash ./setup-emissary.sh
 Create namespaces for CockroachDB to use in each of the clusters
 
 ``` sh
-kubectl create namespace us-east --context us-east
-kubectl create namespace us-west --context us-west
-kubectl create namespace eu --context eu
+kubectl create namespace crdb --context us-east
+kubectl create namespace crdb --context us-west
+kubectl create namespace crdb --context eu-central
+```
+
+Create certs for the CockroachDB nodes
+
+``` sh
+bash crdb-certs.sh
 ```
 
 Install CockroachDB into the clusters
 
 ``` sh
-kubectl apply -f the-world/k8s/cockroachdb-eu.yaml -n eu --context eu
-kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
-kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west
+kubectl apply -f the-world/k8s/cockroachdb-eu-central.yaml -n crdb --context eu-central
+kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n crdb --context us-east
+kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n crdb --context us-west
 ```
 
 Initialise CockroachDB
 
 ``` sh
 kubectl exec \
-   --context eu \
-   --namespace eu \
+   --context eu-central \
+   --namespace crdb \
    -it cockroachdb-0 \
    -- /cockroach/cockroach init \
    --certs-dir=/cockroach/cockroach-certs
+```
+
+Enter bash shell
+
+``` sh
+kubectl exec \
+   --context eu-central \
+   -it cockroachdb-0 \
+   --namespace crdb \
+   -- bash
+```
+
+Enter SQL shell
+
+``` sh
+kubectl exec \
+   --context eu-central \
+   -it cockroachdb-0 \
+   --namespace crdb \
+   -- cockroach sql
 
 ```
 
@@ -123,7 +149,7 @@ kubectl exec \
 ``` sh
 k3d cluster delete us-east
 k3d cluster delete us-west
-k3d cluster delete eu
+k3d cluster delete eu-central
 
 rm *.crt
 rm *.key

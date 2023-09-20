@@ -51,9 +51,9 @@ gen_issuer () {
 gen_anchor
 gen_issuer us-east
 gen_issuer us-west
-gen_issuer eu
+gen_issuer eu-central
 
-for ctx in us-east us-west eu; do \
+for ctx in us-east us-west eu-central; do \
     domain="${ctx}" ;\
     linkerd --context=$ctx install --crds | kubectl --context $ctx apply -f - ;\
     linkerd --context=$ctx install \
@@ -64,12 +64,12 @@ for ctx in us-east us-west eu; do \
         | kubectl --context $ctx apply -f - ;\
 done
 
-for ctx in us-east us-west eu; do \
+for ctx in us-east us-west eu-central; do \
     linkerd --context=$ctx multicluster install --gateway=false \
         | kubectl --context $ctx apply -f - ;\
 done
 
-for ctx in us-east us-west eu; do \
+for ctx in us-east us-west eu-central; do \
     linkerd --context=$ctx check ;\
 done
 
@@ -78,43 +78,43 @@ done
 # for k3d: you shouldn't need this with cloud clusters.
 USEAST_APISERVER=$(kubectl --context us-east get node k3d-us-east-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
 USWEST_APISERVER=$(kubectl --context us-west get node k3d-us-west-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
-EU_APISERVER=$(kubectl --context eu get node k3d-eu-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
+EUCENTRAL_APISERVER=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
 
-# us-east -> us-west and eu
+# us-east -> us-west and eu-central
 linkerd --context=us-west multicluster link \
         --cluster-name us-west \
         --gateway=false \
         --api-server-address="https://${USWEST_APISERVER}:6443" \
     | kubectl --context=us-east apply -f -
 
-linkerd --context=eu multicluster link \
-        --cluster-name eu \
+linkerd --context=eu-central multicluster link \
+        --cluster-name eu-central \
         --gateway=false \
-        --api-server-address="https://${EU_APISERVER}:6443" \
+        --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
     | kubectl --context=us-east apply -f -
 
-# us-west -> us-east and eu
+# us-west -> us-east and eu-central
 linkerd --context=us-east multicluster link \
         --cluster-name us-east \
         --gateway=false \
         --api-server-address="https://${USEAST_APISERVER}:6443" \
     | kubectl --context=us-west apply -f -
 
-linkerd --context=eu multicluster link \
-        --cluster-name eu \
+linkerd --context=eu-central multicluster link \
+        --cluster-name eu-central \
         --gateway=false \
-        --api-server-address="https://${EU_APISERVER}:6443" \
+        --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
     | kubectl --context=us-west apply -f -
 
-# eu -> us-east and us-west
+# eu-central -> us-east and us-west
 linkerd --context=us-east multicluster link \
         --cluster-name us-east \
         --gateway=false \
         --api-server-address="https://${USEAST_APISERVER}:6443" \
-    | kubectl --context=eu apply -f -
+    | kubectl --context=eu-central apply -f -
 
 linkerd --context=us-west multicluster link \
         --cluster-name us-west \
         --gateway=false \
         --api-server-address="https://${USWEST_APISERVER}:6443" \
-    | kubectl --context=eu apply -f -
+    | kubectl --context=eu-central apply -f -

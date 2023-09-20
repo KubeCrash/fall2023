@@ -1,3 +1,5 @@
 scratchpad.sql
 *.crt
 *.key
+certs/
+keys/

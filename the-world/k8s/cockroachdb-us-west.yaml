@@ -179,7 +179,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
-  namespace: us-west
+  namespace: crdb
 spec:
   serviceName: "cockroachdb"
   replicas: 3
@@ -229,8 +229,8 @@ spec:
           periodSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: crdb
-          mountPath: /cockroach/cockroach-data
+        - name: node-storage
+          mountPath: "/data"
         - name: certs
           mountPath: /cockroach/cockroach-certs
         - name: cockroach-env
@@ -260,7 +260,7 @@ spec:
             --certs-dir /cockroach/cockroach-certs
             --advertise-host $(hostname -f)
             --http-addr 0.0.0.0
-            --join cockroachdb-0.cockroachdb.eu,cockroachdb-0.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west
+            --join cockroachdb-0.cockroachdb.eu-central,cockroachdb-0.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west
             --locality=region=us-west
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB
@@ -268,9 +268,9 @@ spec:
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 60
       volumes:
-      - name: datadir
-        persistentVolumeClaim:
-          claimName: crdb
+      - name: node-storage
+        hostPath:
+          path: "/data"
       - name: certs
         secret:
           secretName: cockroachdb.node

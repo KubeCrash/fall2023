@@ -18,7 +18,7 @@ spec:
     - ReadWriteOnce
   storageClassName: ""
   local:
-    path: /tmp/k3d-eu-server-0
+    path: /tmp/k3d-eu-central-server-0
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -26,7 +26,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - k3d-eu-server-0
+          - k3d-eu-central-server-0
 ---
 
 apiVersion: v1
@@ -179,7 +179,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
-  namespace: eu
+  namespace: crdb
 spec:
   serviceName: "cockroachdb"
   replicas: 3
@@ -229,8 +229,8 @@ spec:
           periodSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: crdb
-          mountPath: /cockroach/cockroach-data
+        - name: node-storage
+          mountPath: "/data"
         - name: certs
           mountPath: /cockroach/cockroach-certs
         - name: cockroach-env
@@ -260,17 +260,17 @@ spec:
             --certs-dir /cockroach/cockroach-certs
             --advertise-host $(hostname -f)
             --http-addr 0.0.0.0
-            --join cockroachdb-0.cockroachdb.eu,cockroachdb-0.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west
-            --locality=region=eu
+            --join cockroachdb-0.cockroachdb.eu-central,cockroachdb-0.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west
+            --locality=region=eu-central
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB
       # No pre-stop hook is required, a SIGTERM plus some time is all that's
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 60
       volumes:
-      - name: datadir
-        persistentVolumeClaim:
-          claimName: crdb
+      - name: node-storage
+        hostPath:
+          path: "/data"
       - name: certs
         secret:
           secretName: cockroachdb.node
