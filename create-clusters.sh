@@ -71,8 +71,8 @@ useast_cidr=
 useast_router=
 uswest_cidr=
 uswest_router=
-eu_central_cidr=
-eu_central_router=
+eucentral_cidr=
+eucentral_router=
 
 REMAINING=60 ;\
 echo "Getting us-east cluster network info..." ;\
@@ -88,7 +88,7 @@ if [ $REMAINING -eq 0 ]; then \
     echo "Timed out waiting for us-east network info" ;\
     exit 1 ;\
 else \
-    printf "\n" ;\
+    printf "\nus-east: $useast_cidr, router $useast_router" ;\
 fi
 
 REMAINING=60 ;\
@@ -105,15 +105,15 @@ if [ $REMAINING -eq 0 ]; then \
     echo "Timed out waiting for us-west network info" ;\
     exit 1 ;\
 else \
-    printf "\n" ;\
+    printf "\nus-west: $uswest_cidr, router $uswest_router" ;\
 fi
 
 REMAINING=60 ;\
 echo "Getting eu-central cluster network info..." ;\
 while true; do \
-    eu_central_cidr=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.spec.podCIDR}') ;\
-    eu_central_router=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}') ;\
-    if [ -n "$eu-central_cidr" -a -n "$eu-central_router" ]; then break; fi ;\
+    eucentral_cidr=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.spec.podCIDR}') ;\
+    eucentral_router=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}') ;\
+    if [ -n "$eucentral_cidr" -a -n "$eucentral_router" ]; then break; fi ;\
     REMAINING=$(( $REMAINING - 1 )) ;\
     printf "." ;\
     sleep 1 ;\
@@ -122,16 +122,16 @@ if [ $REMAINING -eq 0 ]; then \
     echo "Timed out waiting for eu-central network info" ;\
     exit 1 ;\
 else \
-    printf "\n" ;\
+    printf "\neu-central: $eucentral_cidr, router $eucentral_router" ;\
 fi
 
-echo "us-east cluster: route ${uswest_cidr} via ${uswest_router}, ${eu_central_cidr} via ${eu_central_router}"
+echo "us-east cluster: route ${uswest_cidr} via ${uswest_router}, ${eucentral_cidr} via ${eucentral_router}"
 docker exec -it k3d-us-east-server-0 ip route add ${uswest_cidr} via ${uswest_router}
-docker exec -it k3d-us-east-server-0 ip route add ${eu_central_cidr} via ${eu_central_router}
+docker exec -it k3d-us-east-server-0 ip route add ${eucentral_cidr} via ${eucentral_router}
 
-echo "us-west cluster: route ${useast_cidr} via ${useast_router}, ${eu_central_cidr} via ${eu_central_router}"
+echo "us-west cluster: route ${useast_cidr} via ${useast_router}, ${eucentral_cidr} via ${eucentral_router}"
 docker exec -it k3d-us-west-server-0 ip route add ${useast_cidr} via ${useast_router}
-docker exec -it k3d-us-west-server-0 ip route add ${eu_central_cidr} via ${eu_central_router}
+docker exec -it k3d-us-west-server-0 ip route add ${eucentral_cidr} via ${eucentral_router}
 
 echo "eu-central cluster: route ${useast_cidr} via ${useast_router}, ${uswest_cidr} via ${uswest_router}"
 docker exec -it k3d-eu-central-server-0 ip route add ${useast_cidr} via ${useast_router}
