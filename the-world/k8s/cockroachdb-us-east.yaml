@@ -33,6 +33,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cockroachdb
+  namespace: cockroachdb
   labels:
     app: cockroachdb
 ---
@@ -41,6 +42,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: cockroachdb
+  namespace: cockroachdb
   labels:
     app: cockroachdb
 rules:
@@ -74,6 +76,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: cockroachdb
+  namespace: cockroachdb
   labels:
     app: cockroachdb
 roleRef:
@@ -83,7 +86,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: us-east
+  namespace: cockroachdb
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
@@ -99,7 +102,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: us-east
+  namespace: cockroachdb
 ---
 
 apiVersion: v1
@@ -108,6 +111,7 @@ metadata:
   # This service is meant to be used by clients of the database. It exposes a ClusterIP that will
   # automatically load balance connections to the different database pods.
   name: cockroachdb-public
+  namespace: cockroachdb
   labels:
     app: cockroachdb
 spec:
@@ -133,8 +137,12 @@ metadata:
   # create a load-balanced ClusterIP and should not be used directly by clients
   # in most circumstances.
   name: cockroachdb
+  namespace: cockroachdb
   labels:
     app: cockroachdb
+    # Mirror this Service to other clusters.
+    # mirror.linkerd.io/exported: remote-discovery
+    mirror.linkerd.io/exported: true
   annotations:
     # Use this annotation in addition to the actual publishNotReadyAddresses
     # field below because the annotation will stop being respected soon but the
@@ -166,6 +174,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: cockroachdb-budget
+  namespace: cockroachdb
   labels:
     app: cockroachdb
 spec:
@@ -179,7 +188,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
-  namespace: us-east
+  namespace: cockroachdb
 spec:
   serviceName: "cockroachdb"
   replicas: 3
@@ -214,7 +223,7 @@ spec:
         #     memory: "1Gi"
         #   limits:
         #     cpu: "1"
-        #     memory: "1Gi" 
+        #     memory: "1Gi"
         ports:
         - containerPort: 26257
           name: grpc
@@ -253,14 +262,14 @@ spec:
           - "-ecx"
           # The use of qualified `hostname -f` is crucial:
           # Other nodes aren't able to look up the unqualified hostname.
+          # --advertise-host $(hostname -f)
           - exec
             /cockroach/cockroach
             start
             --logtostderr
             --certs-dir /cockroach/cockroach-certs
-            --advertise-host $(hostname -f)
             --http-addr 0.0.0.0
-            --join cockroachdb-0.cockroachdb.eu-central,cockroachdb-0.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west
+            --join cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west,cockroachdb-0-eu-central,cockroachdb-1-eu-central,cockroachdb-2-eu-central
             --locality=region=us-east
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB

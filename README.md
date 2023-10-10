@@ -92,26 +92,18 @@ bash ./setup-linkerd.sh
 bash ./setup-emissary.sh
 ```
 
-Create namespaces for CockroachDB to use in each of the clusters
+Create namespaces and certs for the CockroachDB nodes
 
 ``` sh
-kubectl create namespace us-east --context us-east
-kubectl create namespace us-west --context us-west
-kubectl create namespace eu-central --context eu-central
-```
-
-Create certs for the CockroachDB nodes
-
-``` sh
-bash crdb-certs.sh
+bash setup-cockroach.sh
 ```
 
 Install CockroachDB into the clusters
 
 ``` sh
-kubectl apply -f the-world/k8s/cockroachdb-eu-central.yaml -n eu-central --context eu-central
-kubectl apply -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
-kubectl apply -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west
+linkerd inject the-world/k8s/cockroachdb-eu-central.yaml | kubectl apply --context eu-central -f -
+linkerd inject the-world/k8s/cockroachdb-us-east.yaml | kubectl apply --context us-east -f -
+linkerd inject the-world/k8s/cockroachdb-us-west.yaml | kubectl apply --context us-west -f -
 ```
 
 Initialise CockroachDB
@@ -120,7 +112,7 @@ Initialise CockroachDB
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace eu-central \
+   --namespace cockroachdb \
    -- /cockroach/cockroach init \
       --certs-dir=/cockroach/cockroach-certs
 ```
@@ -131,7 +123,7 @@ Enter bash shell
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace eu-central \
+   --namespace cockroachdb \
    -- bash
 ```
 
@@ -141,7 +133,7 @@ Enter SQL shell
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 \
-   --namespace eu-central \
+   --namespace cockroachdb \
    -- cockroach sql
 
 ```
@@ -152,15 +144,20 @@ kubectl exec \
 k3d cluster delete us-east
 k3d cluster delete us-west
 k3d cluster delete eu-central
+```
 
+Or if you just want to reinstall CockroachDB:
+
+``` sh
+kubectl delete --context eu-central ns cockroachdb
+kubectl delete --context us-east ns cockroachdb
+kubectl delete --context us-west ns cockroachdb
+```
+
+then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl
+apply` commands for CockroachDB.
+
+``` sh
 rm *.crt
 rm *.key
 ```
-
-
-
-
-
-kubectl delete -f the-world/k8s/cockroachdb-eu-central.yaml -n eu-central --context eu-central
-kubectl delete -f the-world/k8s/cockroachdb-us-east.yaml -n us-east --context us-east
-kubectl delete -f the-world/k8s/cockroachdb-us-west.yaml -n us-west --context us-west
