@@ -3,3 +3,5 @@ scratchpad.sql
 *.key
 certs/
 keys/
+.idea/
+**/node_modules
