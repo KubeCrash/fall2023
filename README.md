@@ -117,6 +117,32 @@ kubectl exec \
       --certs-dir=/cockroach/cockroach-certs
 ```
 
+Install World
+``` sh
+kubectl create --context eu-central namespace world
+kubectl create --context us-west namespace world
+kubectl create --context us-east namespace world
+linkerd inject the-world/k8s/world.yaml | kubectl apply --context eu-central -f -
+linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context eu-central -f -
+linkerd inject the-world/k8s/world.yaml | kubectl apply --context us-east -f -
+linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context us-east -f -
+linkerd inject the-world/k8s/world.yaml | kubectl apply --context us-west -f -
+linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context us-west -f -
+```
+
+Install Emissary resources
+```sh
+kubectl apply --context eu-central -f emissary/host.yaml
+kubectl apply --context eu-central -f emissary/mappings-eu.yaml
+kubectl apply --context eu-central -f emissary/auth/region-auth-eu.yaml
+kubectl apply --context us-east -f emissary/host.yaml
+kubectl apply --context us-east -f emissary/mappings-us.yaml
+kubectl apply --context us-east -f emissary/auth/region-auth-us.yaml
+kubectl apply --context us-west -f emissary/host.yaml
+kubectl apply --context us-west -f emissary/mappings-us.yaml
+kubectl apply --context us-west -f emissary/auth/region-auth-us.yaml
+```
+
 Enter bash shell
 
 ``` sh
