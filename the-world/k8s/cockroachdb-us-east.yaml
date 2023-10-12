@@ -262,14 +262,14 @@ spec:
           - "-ecx"
           # The use of qualified `hostname -f` is crucial:
           # Other nodes aren't able to look up the unqualified hostname.
-          # --advertise-host $(hostname -f)
           - exec
             /cockroach/cockroach
             start
+            --advertise-host $(hostname -f | sed -e 's!\..*\.!-!')
             --logtostderr
             --certs-dir /cockroach/cockroach-certs
             --http-addr 0.0.0.0
-            --join cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west,cockroachdb-0-eu-central,cockroachdb-1-eu-central,cockroachdb-2-eu-central
+            --join cockroachdb-0-us-east,cockroachdb-1-us-east,cockroachdb-2-us-east,cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west,cockroachdb-0-eu-central,cockroachdb-1-eu-central,cockroachdb-2-eu-central
             --locality=region=us-east
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB
@@ -298,3 +298,144 @@ spec:
       resources:
         requests:
           storage: 1Gi
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: cockroachdb-0-us-east
+#   namespace: cockroachdb
+# spec:
+#   type: ClusterIP
+#   ports:
+#   - name: grpc
+#     port: 26257
+#   - name: http
+#     port: 8080
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-0-26257
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-0-us-east
+#       kind: Service
+#       group: ""
+#       port: 26257
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
+#       port: 26257
+#       weight: 100
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-0-8080
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-0-us-east
+#       kind: Service
+#       group: ""
+#       port: 8080
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
+#       port: 8080
+#       weight: 100
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: cockroachdb-1-us-east
+#   namespace: cockroachdb
+# spec:
+#   type: ClusterIP
+#   ports:
+#   - name: grpc
+#     port: 26257
+#   - name: http
+#     port: 8080
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-1-26257
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-1-us-east
+#       kind: Service
+#       group: ""
+#       port: 26257
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
+#       port: 26257
+#       weight: 100
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-1-8080
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-1-us-east
+#       kind: Service
+#       group: ""
+#       port: 8080
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
+#       port: 8080
+#       weight: 100
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: cockroachdb-2-us-east
+#   namespace: cockroachdb
+# spec:
+#   type: ClusterIP
+#   ports:
+#   - name: grpc
+#     port: 26257
+#   - name: http
+#     port: 8080
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-2-26257
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-2-us-east
+#       kind: Service
+#       group: ""
+#       port: 26257
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
+#       port: 26257
+#       weight: 100
+# ---
+# apiVersion: policy.linkerd.io/v1beta3
+# kind: HTTPRoute
+# metadata:
+#   name: router-2-8080
+#   namespace: cockroachdb
+# spec:
+#   parentRefs:
+#     - name: cockroachdb-2-us-east
+#       kind: Service
+#       group: ""
+#       port: 8080
+#   rules:
+#   - backendRefs:
+#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
+#       port: 8080
+#       weight: 100

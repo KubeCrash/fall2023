@@ -262,14 +262,14 @@ spec:
           - "-ecx"
           # The use of qualified `hostname -f` is crucial:
           # Other nodes aren't able to look up the unqualified hostname.
-          # --advertise-host $(hostname -f)
           - exec
             /cockroach/cockroach
             start
+            --advertise-host $(hostname -f | sed -e 's!\..*\.!-!')
             --logtostderr
             --certs-dir /cockroach/cockroach-certs
             --http-addr 0.0.0.0
-            --join cockroachdb-0-us-east,cockroachdb-1-us-east,cockroachdb-2-us-east,cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west
+            --join cockroachdb-0-us-east,cockroachdb-1-us-east,cockroachdb-2-us-east,cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west,cockroachdb-0-eu-central,cockroachdb-1-eu-central,cockroachdb-2-eu-central
             --locality=region=eu-central
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB

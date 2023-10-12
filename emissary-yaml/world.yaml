@@ -1,0 +1,12 @@
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: cells-mapping
+  namespace: world
+spec:
+  hostname: "*"
+  prefix: /cells/
+  service: world.world
+  rewrite: /cells/
+  timeout_ms: 0

@@ -33,7 +33,7 @@ spec:
         imagePullPolicy: Always
         env:
           - name: CONNECTION_STRING
-            value: 'postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@cockroachdb.cockroachdb:26257/the_world?sslmode=allow'
+            value: 'postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@cockroachdb-public.cockroachdb:26257/the_world?sslmode=allow'
         ports:
         - name: http
           containerPort: 8888

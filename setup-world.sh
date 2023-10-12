@@ -1,6 +1,6 @@
 (cd the-world/server; docker build -t the-world:0.0.1 .)
 
-for ctx in us-east us-west eu; do
+for ctx in us-east us-west eu-central; do
     k3d image import the-world:0.0.1 -c $ctx
 
     kubectl --context $ctx create ns world
@@ -8,6 +8,6 @@ for ctx in us-east us-west eu; do
     linkerd inject the-world/k8s/world.yaml | kubectl --context $ctx apply -f -
 done
 
-for ctx in us-east us-west eu; do
+for ctx in us-east us-west eu-central; do
     kubectl --context $ctx rollout status -n world deploy
 done

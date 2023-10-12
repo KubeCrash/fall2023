@@ -278,7 +278,7 @@ class CellSet {
     }
 
     update() {
-        new Request("GET", "http://localhost:8888/cells/", "", "world", (r) => {
+        new Request("GET", "/cells/", "", "world", (r) => {
             if (r.ok) {
                 let world = r.response
 
