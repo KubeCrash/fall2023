@@ -1,0 +1,27 @@
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: route-to-us-east
+  namespace: emissary
+spec:
+  hostname: '*'
+  precedence: 100
+  add_response_headers:
+    x-routed-from: eu
+    x-routed-to: us
+  headers:
+    x-region-target: us
+  prefix: /
+  service: http://emissary-ingress-us-east
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: world
+  namespace: world
+spec:
+  hostname: '*'
+  precedence: 90
+  prefix: /
+  service: world-gui.world:80
