@@ -29,8 +29,11 @@ spec:
     spec:
       containers:
       - name: world
-        image: the-world:0.0.1
-        # imagePullPolicy: Always
+        image: thedevelopnik/the-world:0.0.1
+        imagePullPolicy: Always
+        env:
+          - name: CONNECTION_STRING
+            value: 'postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@cockroachdb.cockroachdb:26257/the_world?sslmode=allow'
         ports:
         - name: http
           containerPort: 8888
