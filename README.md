@@ -84,7 +84,7 @@ docker run --rm -it \
 
 ### Kubernetes
 
-Create the cluster with Linkerd and Emissary
+#### Create the cluster with Linkerd and Emissary
 
 ``` sh
 bash ./create-clusters.sh
@@ -92,7 +92,7 @@ bash ./setup-linkerd.sh
 bash ./setup-emissary.sh
 ```
 
-Create namespaces and certs for the CockroachDB nodes
+#### Create namespaces and certs for the CockroachDB nodes
 
 ``` sh
 bash setup-cockroach.sh
@@ -115,6 +115,15 @@ kubectl exec \
    --namespace cockroachdb \
    -- /cockroach/cockroach init \
       --certs-dir=/cockroach/cockroach-certs
+```
+
+#### TBD: Create the initial DB tables, etc.
+
+#### Set up the World
+
+``` sh
+bash ./setup-world.sh
+kubectl apply -f emissary-yaml
 ```
 
 Install World
@@ -143,6 +152,8 @@ kubectl apply --context us-west -f emissary/mappings-us.yaml
 kubectl apply --context us-west -f emissary/auth/region-auth-us.yaml
 ```
 
+#### Random debugging stuff
+
 Enter bash shell
 
 ``` sh
@@ -163,7 +174,7 @@ kubectl exec \
    -- cockroach sql
 ```
 
-### Cleanup
+#### Cleanup
 
 ``` sh
 k3d cluster delete us-east
