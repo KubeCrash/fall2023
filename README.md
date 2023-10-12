@@ -111,7 +111,7 @@ Initialise CockroachDB
 ``` sh
 kubectl exec \
    --context eu-central \
-   -it cockroachdb-0 \
+   -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
    -- /cockroach/cockroach init \
       --certs-dir=/cockroach/cockroach-certs
@@ -122,7 +122,7 @@ Enter bash shell
 ``` sh
 kubectl exec \
    --context eu-central \
-   -it cockroachdb-0 \
+   -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
    -- bash
 ```
@@ -132,10 +132,9 @@ Enter SQL shell
 ``` sh
 kubectl exec \
    --context eu-central \
-   -it cockroachdb-0 \
+   -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
    -- cockroach sql
-
 ```
 
 ### Cleanup

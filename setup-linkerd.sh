@@ -87,41 +87,27 @@ EUCENTRAL_APISERVER=$(kubectl --context eu-central get node k3d-eu-central-serve
 
 set -x
 
-# us-east -> us-west and eu-central
-linkerd --context=us-west multicluster link \
-        --cluster-name us-west \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${USWEST_APISERVER}:6443" \
-    | kubectl --context=us-east apply -f -
+# This looks completely bizarre, I know, but we're going to link
+# each cluster to _all three clusters_. Why? It's the way to make
+# get ClusterIP services for each pod in each cluster. Horrible,
+# but yeah.
 
-linkerd --context=eu-central multicluster link \
-        --cluster-name eu-central \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
-    | kubectl --context=us-east apply -f -
+for ctx in us-east us-west eu-central; do \
+    linkerd --context=us-east multicluster link \
+            --cluster-name us-east \
+            $GATEWAY $LINK_ARGS \
+            --api-server-address="https://${USEAST_APISERVER}:6443" \
+            | kubectl --context $ctx apply -f - ;\
 
-# us-west -> us-east and eu-central
-linkerd --context=us-east multicluster link \
-        --cluster-name us-east \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${USEAST_APISERVER}:6443" \
-    | kubectl --context=us-west apply -f -
+    linkerd --context=us-west multicluster link \
+            --cluster-name us-west \
+            $GATEWAY $LINK_ARGS \
+            --api-server-address="https://${USWEST_APISERVER}:6443" \
+            | kubectl --context $ctx apply -f - ;\
 
-linkerd --context=eu-central multicluster link \
-        --cluster-name eu-central \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
-    | kubectl --context=us-west apply -f -
-
-# eu-central -> us-east and us-west
-linkerd --context=us-east multicluster link \
-        --cluster-name us-east \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${USEAST_APISERVER}:6443" \
-    | kubectl --context=eu-central apply -f -
-
-linkerd --context=us-west multicluster link \
-        --cluster-name us-west \
-        $GATEWAY $LINK_ARGS \
-        --api-server-address="https://${USWEST_APISERVER}:6443" \
-    | kubectl --context=eu-central apply -f -
+    linkerd --context=eu-central multicluster link \
+            --cluster-name eu-central \
+            $GATEWAY $LINK_ARGS \
+            --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
+            | kubectl --context $ctx apply -f - ;\
+done
