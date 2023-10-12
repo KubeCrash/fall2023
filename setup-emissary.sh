@@ -23,10 +23,12 @@ install_emissary () {
     curl --proto '=https' --tlsv1.2 -sSfL $EMISSARY_INGRESS | \
         sed -e 's/replicas: 3/replicas: 1/' | \
         linkerd inject - | kubectl --context "$ctx" apply -f -
-
-    kubectl --context "$ctx" -n emissary wait --for condition=available --timeout=90s deploy -lproduct=aes
 }
 
 install_emissary us-east
 install_emissary us-west
 install_emissary eu-central
+
+for ctx in us-east us-west eu-central; do \
+    kubectl --context "$ctx" -n emissary wait --for condition=available --timeout=90s deploy -lproduct=aes ;\
+done
