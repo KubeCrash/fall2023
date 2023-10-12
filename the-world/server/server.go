@@ -11,17 +11,24 @@ import (
 )
 
 func main() {
+	var db *sql.DB = nil
+	var err error
+
 	connectionString, ok := os.LookupEnv("CONNECTION_STRING")
-	if !ok {
-		log.Fatalf("missing CONNECTION_STRING env var")
+
+	if ok {
+		db, err = sql.Open("pgx", connectionString)
+
+		if err != nil {
+			log.Fatalf("Failed to open the SQLite database: %v", err)
+		}
+
+		defer db.Close()
+	} else {
+		log.Printf("No connection string found, only serving the GUI!")
 	}
 
-	db, err := sql.Open("pgx", connectionString)
-	if err != nil {
-		log.Fatalf("Failed to open the SQLite database: %v", err)
-	}
-	defer db.Close()
-
+	log.Printf("Starting server, db is %v", db)
 	svr := server.New(db)
 
 	fmt.Printf("Listening on port 8888...\n")
