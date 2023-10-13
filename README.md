@@ -2,8 +2,7 @@
 
 This is the World demo.
 
-**It is very much WIP.** In particular, there's no K8s code at all in here
-yet.
+**It is very much WIP.**
 
 You'll need `kubectl`, `linkerd`, and `step` to run this.
 
@@ -123,33 +122,6 @@ kubectl exec \
 
 ``` sh
 bash ./setup-world.sh
-kubectl apply -f emissary-yaml
-```
-
-Install World
-``` sh
-kubectl create --context eu-central namespace world
-kubectl create --context us-west namespace world
-kubectl create --context us-east namespace world
-linkerd inject the-world/k8s/world.yaml | kubectl apply --context eu-central -f -
-linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context eu-central -f -
-linkerd inject the-world/k8s/world.yaml | kubectl apply --context us-east -f -
-linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context us-east -f -
-linkerd inject the-world/k8s/world.yaml | kubectl apply --context us-west -f -
-linkerd inject the-world/k8s/world-gui.yaml | kubectl apply --context us-west -f -
-```
-
-Install Emissary resources
-```sh
-kubectl apply --context eu-central -f emissary/host.yaml
-kubectl apply --context eu-central -f emissary/mappings-eu.yaml
-kubectl apply --context eu-central -f emissary/auth/region-auth-eu.yaml
-kubectl apply --context us-east -f emissary/host.yaml
-kubectl apply --context us-east -f emissary/mappings-us.yaml
-kubectl apply --context us-east -f emissary/auth/region-auth-us.yaml
-kubectl apply --context us-west -f emissary/host.yaml
-kubectl apply --context us-west -f emissary/mappings-us.yaml
-kubectl apply --context us-west -f emissary/auth/region-auth-us.yaml
 ```
 
 #### Random debugging stuff
