@@ -23,6 +23,9 @@ install_emissary () {
     curl --proto '=https' --tlsv1.2 -sSfL $EMISSARY_INGRESS | \
         sed -e 's/replicas: 3/replicas: 1/' | \
         linkerd inject - | kubectl --context "$ctx" apply -f -
+
+    kubectl --context "$ctx" label service -n emissary emissary-ingress 'mirror.linkerd.io/exported=remote-discovery'
+    kubectl apply --context "$ctx" -f emissary/listeners-and-host.yaml
 }
 
 install_emissary us-east
@@ -32,3 +35,9 @@ install_emissary eu-central
 for ctx in us-east us-west eu-central; do \
     kubectl --context "$ctx" -n emissary wait --for condition=available --timeout=90s deploy -lproduct=aes ;\
 done
+
+for ctx in us-east us-west; do \
+    kubectl apply --context "$ctx" -f emissary/auth/region-auth-us.yaml
+done
+
+kubectl apply --context eu-central -f emissary/auth/region-auth-eu.yaml
