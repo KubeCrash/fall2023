@@ -48,7 +48,7 @@ app.use(addRequestId)
 app.use(logRequests)
 
 // Get authentication path from env, default to /extauth
-var authPath = '/extauth'
+let authPath = '/extauth'
 if ('AUTH_PATH' in process.env) {
     authPath = process.env.AUTH_PATH
 }
