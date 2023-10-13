@@ -145,7 +145,7 @@ kubectl exec \
    --context eu-central \
    -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
-   -- cockroach sql
+   -- cockroach sql --url "postgres://root@localhost:26257/defaultdb?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&sslcert=/cockroach/cockroach-certs/client.root.crt&sslkey=/cockroach/cockroach-certs/client.root.key"
 ```
 
 #### Cleanup
