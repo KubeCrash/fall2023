@@ -1,48 +1,16 @@
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: local-storage
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
----
-
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: crdb
-spec:
-  capacity:
-    storage: 10Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: ""
-  local:
-    path: /tmp/k3d-us-east-server-0
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - k3d-us-east-server-0
----
-
+# Generated file, DO NOT EDIT. Source: cloud/kubernetes/templates/multiregion/eks/cockroachdb-statefulset-secure-eks.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cockroachdb
-  namespace: cockroachdb
+  namespace: us-east
   labels:
     app: cockroachdb
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: cockroachdb
-  namespace: cockroachdb
   labels:
     app: cockroachdb
 rules:
@@ -54,7 +22,6 @@ rules:
   - create
   - get
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -71,12 +38,10 @@ rules:
   - get
   - watch
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: cockroachdb
-  namespace: cockroachdb
   labels:
     app: cockroachdb
 roleRef:
@@ -86,9 +51,8 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: cockroachdb
+  namespace: us-east
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -102,16 +66,14 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: cockroachdb
-  namespace: cockroachdb
+  namespace: us-east
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   # This service is meant to be used by clients of the database. It exposes a ClusterIP that will
   # automatically load balance connections to the different database pods.
   name: cockroachdb-public
-  namespace: cockroachdb
   labels:
     app: cockroachdb
 spec:
@@ -128,7 +90,6 @@ spec:
   selector:
     app: cockroachdb
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -137,12 +98,8 @@ metadata:
   # create a load-balanced ClusterIP and should not be used directly by clients
   # in most circumstances.
   name: cockroachdb
-  namespace: cockroachdb
   labels:
     app: cockroachdb
-    # Mirror this Service to other clusters.
-    # mirror.linkerd.io/exported: remote-discovery
-    mirror.linkerd.io/exported: true
   annotations:
     # Use this annotation in addition to the actual publishNotReadyAddresses
     # field below because the annotation will stop being respected soon but the
@@ -169,12 +126,10 @@ spec:
   selector:
     app: cockroachdb
 ---
-
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: cockroachdb-budget
-  namespace: cockroachdb
   labels:
     app: cockroachdb
 spec:
@@ -183,12 +138,12 @@ spec:
       app: cockroachdb
   maxUnavailable: 1
 ---
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
-  namespace: cockroachdb
+  # TODO: Use this field to specify a namespace other than "default" in which to deploy CockroachDB (e.g., us-east-1).
+  namespace: us-east
 spec:
   serviceName: "cockroachdb"
   replicas: 3
@@ -213,22 +168,50 @@ spec:
                   values:
                   - cockroachdb
               topologyKey: kubernetes.io/hostname
+      # This init container is used to determine the availability zones of the Cockroach pods. The AZs are used to define --locality when starting Cockroach nodes.
+      # initContainers:
+      # - command:
+      #  - sh
+      #  - -ecx
+      #  - echo "aws-$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone/)"
+      #    > /etc/cockroach-env/zone
+      #  image: byrnedo/alpine-curl:0.1
+      #  imagePullPolicy: IfNotPresent
+      #  name: locality-container
+      #  resources: {}
+      #  terminationMessagePath: /dev/termination-log
+      #  terminationMessagePolicy: File
+      #  volumeMounts:
+      #  - mountPath: /etc/cockroach-env
+      #    name: cockroach-env
       containers:
       - name: cockroachdb
         image: cockroachdb/cockroach:v23.1.8
         imagePullPolicy: IfNotPresent
-        # resources:
-        #   requests:
-        #     cpu: "1"
-        #     memory: "1Gi"
-        #   limits:
-        #     cpu: "1"
-        #     memory: "1Gi"
+        # TODO: Change these to appropriate values for the hardware that you're running. You can see
+        # the resources that can be allocated on each of your Kubernetes nodes by running:
+        #   kubectl describe nodes
+        # Note that requests and limits should have identical values.
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "1Gi" 
         ports:
         - containerPort: 26257
           name: grpc
         - containerPort: 8080
           name: http
+# We recommend that you do not configure a liveness probe on a production environment, as this can impact the availability of production databases.
+#       livenessProbe:
+#         httpGet:
+#           path: "/health"
+#           port: http
+#           scheme: HTTPS
+#         initialDelaySeconds: 30
+#         periodSeconds: 5
         readinessProbe:
           httpGet:
             path: "/health?ready=1"
@@ -238,8 +221,8 @@ spec:
           periodSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: node-storage
-          mountPath: "/data"
+        - name: datadir
+          mountPath: /cockroach/cockroach-data
         - name: certs
           mountPath: /cockroach/cockroach-certs
         - name: cockroach-env
@@ -265,11 +248,11 @@ spec:
           - exec
             /cockroach/cockroach
             start
-            --advertise-host $(hostname -f | sed -e 's!\..*\.!-!')
             --logtostderr
             --certs-dir /cockroach/cockroach-certs
+            --advertise-host $(hostname -f)
             --http-addr 0.0.0.0
-            --join cockroachdb-0-us-east,cockroachdb-1-us-east,cockroachdb-2-us-east,cockroachdb-0-us-west,cockroachdb-1-us-west,cockroachdb-2-us-west,cockroachdb-0-eu-central,cockroachdb-1-eu-central,cockroachdb-2-eu-central
+            --join cockroachdb-0.cockroachdb.eu-central,cockroachdb-1.cockroachdb.eu-central,cockroachdb-2.cockroachdb.eu-central,cockroachdb-0.cockroachdb.us-east,cockroachdb-1.cockroachdb.us-east,cockroachdb-2.cockroachdb.us-east,cockroachdb-0.cockroachdb.us-west,cockroachdb-1.cockroachdb.us-west,cockroachdb-2.cockroachdb.us-west
             --locality=region=us-east
             --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
             --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB
@@ -277,9 +260,9 @@ spec:
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 60
       volumes:
-      - name: node-storage
-        hostPath:
-          path: "/data"
+      - name: datadir
+        persistentVolumeClaim:
+          claimName: datadir
       - name: certs
         secret:
           secretName: cockroachdb.node
@@ -291,151 +274,10 @@ spec:
     type: RollingUpdate
   volumeClaimTemplates:
   - metadata:
-      name: crdb
+      name: datadir
     spec:
       accessModes:
         - "ReadWriteOnce"
       resources:
         requests:
-          storage: 1Gi
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-0-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-0-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-0-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-0-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-0-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-1-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-1-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-1-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-1-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-1-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-2-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-2-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-2-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-2-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-2-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
+          storage: 50Gi

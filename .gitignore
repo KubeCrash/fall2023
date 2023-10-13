@@ -3,3 +3,5 @@ scratchpad.sql
 *.key
 certs/
 keys/
+scratchpad.md
+my-safe-directory/

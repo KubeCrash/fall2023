@@ -145,7 +145,7 @@ kubectl exec \
    --context eu-central \
    -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
-   -- cockroach sql
+   -- cockroach sql --url "postgres://root@localhost:26257/defaultdb?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&sslcert=/cockroach/cockroach-certs/client.root.crt&sslkey=/cockroach/cockroach-certs/client.root.key"
 ```
 
 #### Cleanup
@@ -159,9 +159,13 @@ k3d cluster delete eu-central
 Or if you just want to reinstall CockroachDB:
 
 ``` sh
-kubectl delete --context eu-central ns cockroachdb
-kubectl delete --context us-east ns cockroachdb
-kubectl delete --context us-west ns cockroachdb
+kubectl delete --context eu-central ns eu-central
+kubectl delete --context us-east ns us-east
+kubectl delete --context us-west ns us-west
+
+kubectl delete --context eu-central pv crdb
+kubectl delete --context us-east pv crdb
+kubectl delete --context us-west pv crdb
 ```
 
 then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl

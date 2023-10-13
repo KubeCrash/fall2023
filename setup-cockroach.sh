@@ -7,55 +7,98 @@
 
 set -x
 
-rm -rf cockroach
-mkdir cockroach cockroach/certs cockroach/keys
+kubectl create namespace eu-central --context eu-central
+kubectl create namespace us-east --context us-east
+kubectl create namespace us-west --context us-west
+
+mkdir certs my-safe-directory
 
 cockroach cert create-ca \
-   --certs-dir=cockroach/certs \
-   --ca-key=cockroach/keys/ca.key
+  --certs-dir=certs \
+  --ca-key=my-safe-directory/ca.key
 
 cockroach cert create-client \
-   root \
-   --certs-dir=cockroach/certs \
-   --ca-key=cockroach/keys/ca.key
+  root \
+  --certs-dir=certs \
+  --ca-key=my-safe-directory/ca.key
 
-for ctx in us-east us-west eu-central; do
-   kubectl create ns cockroachdb --context $ctx
+kubectl create secret \
+  generic cockroachdb.client.root \
+  --from-file=certs \
+  --context eu-central \
+  --namespace eu-central
 
-   kubectl create secret \
-      generic cockroachdb.client.root \
-      --from-file=cockroach/certs \
-      --context $ctx \
-      --namespace cockroachdb
+kubectl create secret \
+  generic cockroachdb.client.root \
+  --from-file=certs \
+  --context us-east \
+  --namespace us-east
 
-   cockroach cert create-node \
-      localhost 127.0.0.1 \
-      cockroachdb-public \
-      cockroachdb-public.cockroachdb \
-      cockroachdb-public.cockroachdb.svc \
-      cockroachdb-public.cockroachdb.svc.$ctx \
-      cockroachdb-0 \
-      cockroachdb-0-us-east \
-      cockroachdb-0-us-west \
-      cockroachdb-0-eu-central \
-      cockroachdb-1 \
-      cockroachdb-1-us-east \
-      cockroachdb-1-us-west \
-      cockroachdb-1-eu-central \
-      cockroachdb-2 \
-      cockroachdb-2-us-east \
-      cockroachdb-2-us-west \
-      cockroachdb-2-eu-central \
-      --certs-dir=cockroach/certs \
-      --ca-key=cockroach/keys/ca.key
+kubectl create secret \
+  generic cockroachdb.client.root \
+  --from-file=certs \
+  --context us-west \
+  --namespace us-west
 
-   kubectl create secret \
-      generic cockroachdb.node \
-      --from-file=cockroach/certs \
-      --context $ctx \
-      --namespace cockroachdb
 
-   mkdir cockroach/$ctx-node
-   mv cockroach/certs/node.crt cockroach/$ctx-node/
-   mv cockroach/certs/node.key cockroach/$ctx-node/
-done
+cockroach cert create-node \
+  localhost 127.0.0.1 \
+  cockroachdb-public \
+  cockroachdb-public.eu-central \
+  cockroachdb-public.eu-central.svc.eu-central \
+  "*.cockroachdb" \
+  "*.cockroachdb.eu-central" \
+  "*.cockroachdb.eu-central.svc.eu-central" \
+  --certs-dir=certs \
+  --ca-key=my-safe-directory/ca.key
+
+kubectl create secret \
+  generic cockroachdb.node \
+  --from-file=certs \
+  --context eu-central \
+  --namespace eu-central
+
+rm certs/node.crt
+rm certs/node.key
+
+
+cockroach cert create-node \
+  localhost 127.0.0.1 \
+  cockroachdb-public \
+  cockroachdb-public.us-east \
+  cockroachdb-public.us-east.svc.us-east \
+  "*.cockroachdb" \
+  "*.cockroachdb.us-east" \
+  "*.cockroachdb.us-east.svc.us-east" \
+  --certs-dir=certs \
+  --ca-key=my-safe-directory/ca.key
+
+kubectl create secret \
+  generic cockroachdb.node \
+  --from-file=certs \
+  --context us-east \
+  --namespace us-east
+
+rm certs/node.crt
+rm certs/node.key
+
+
+cockroach cert create-node \
+  localhost 127.0.0.1 \
+  cockroachdb-public \
+  cockroachdb-public.us-west \
+  cockroachdb-public.us-west.svc.us-west \
+  "*.cockroachdb" \
+  "*.cockroachdb.us-west" \
+  "*.cockroachdb.us-west.svc.us-west" \
+  --certs-dir=certs \
+  --ca-key=my-safe-directory/ca.key
+
+kubectl create secret \
+  generic cockroachdb.node \
+  --from-file=certs \
+  --context us-west \
+  --namespace us-west
+
+rm certs/node.crt
+rm certs/node.key
