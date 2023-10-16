@@ -84,17 +84,14 @@ docker run --rm -it \
 
 ### Kubernetes
 
-#### Create the cluster with Linkerd and Emissary
+#### Create the cluster
 
 ``` sh
 bash ./create-clusters.sh
 bash ./setup-linkerd.sh
 bash ./setup-emissary.sh
-```
 
-#### Create namespaces and certs for the CockroachDB nodes
-
-``` sh
+# Namespace and certs for CockrochDB.
 bash setup-cockroach.sh
 ```
 
@@ -128,16 +125,6 @@ kubectl apply -f emissary-yaml
 
 #### Random debugging stuff
 
-Enter bash shell
-
-``` sh
-kubectl exec \
-   --context eu-central \
-   -it cockroachdb-0 -c cockroachdb \
-   --namespace cockroachdb \
-   -- bash
-```
-
 Enter SQL shell
 
 ``` sh
@@ -146,6 +133,29 @@ kubectl exec \
    -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
    -- cockroach sql --url "postgres://root@localhost:26257/defaultdb?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&sslcert=/cockroach/cockroach-certs/client.root.crt&sslkey=/cockroach/cockroach-certs/client.root.key"
+```
+
+Create user
+
+``` sql
+CREATE USER rob WITH LOGIN PASSWORD 'password';
+GRANT ALL ON DATABASE defaultdb TO rob WITH GRANT OPTION;
+GRANT SYSTEM ALL PRIVILEGES TO rob;
+```
+
+Enable enterprise features
+
+``` sql
+SELECT crdb_internal.cluster_id();
+-- crl-lic -months 1 -org 'KubeCrash 2023' -type 'Evaluation' <CLUSTER_ID>
+SET CLUSTER SETTING cluster.organisation = '';
+SET CLUSTER SETTING enterprise.license = '';
+```
+
+Port forward to HTTP port, open browser, and login
+
+``` sh
+kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 ```
 
 #### Cleanup

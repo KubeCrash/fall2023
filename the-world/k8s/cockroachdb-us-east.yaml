@@ -7,29 +7,6 @@ volumeBindingMode: WaitForFirstConsumer
 ---
 
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: crdb
-spec:
-  capacity:
-    storage: 10Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: ""
-  local:
-    path: /tmp/k3d-us-east-server-0
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - k3d-us-east-server-0
----
-
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cockroachdb
@@ -238,8 +215,8 @@ spec:
           periodSeconds: 5
           failureThreshold: 2
         volumeMounts:
-        - name: node-storage
-          mountPath: "/data"
+        - name: datadir
+          mountPath: /cockroach/cockroach-data
         - name: certs
           mountPath: /cockroach/cockroach-certs
         - name: cockroach-env
@@ -277,9 +254,9 @@ spec:
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 60
       volumes:
-      - name: node-storage
-        hostPath:
-          path: "/data"
+      - name: datadir
+        persistentVolumeClaim:
+          claimName: datadir
       - name: certs
         secret:
           secretName: cockroachdb.node
@@ -291,151 +268,10 @@ spec:
     type: RollingUpdate
   volumeClaimTemplates:
   - metadata:
-      name: crdb
+      name: datadir
     spec:
       accessModes:
         - "ReadWriteOnce"
       resources:
         requests:
           storage: 1Gi
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-0-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-0-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-0-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-0-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-0-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-0.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-1-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-1-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-1-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-1-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-1-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-1.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: cockroachdb-2-us-east
-#   namespace: cockroachdb
-# spec:
-#   type: ClusterIP
-#   ports:
-#   - name: grpc
-#     port: 26257
-#   - name: http
-#     port: 8080
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-2-26257
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-2-us-east
-#       kind: Service
-#       group: ""
-#       port: 26257
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
-#       port: 26257
-#       weight: 100
-# ---
-# apiVersion: policy.linkerd.io/v1beta3
-# kind: HTTPRoute
-# metadata:
-#   name: router-2-8080
-#   namespace: cockroachdb
-# spec:
-#   parentRefs:
-#     - name: cockroachdb-2-us-east
-#       kind: Service
-#       group: ""
-#       port: 8080
-#   rules:
-#   - backendRefs:
-#     - name: cockroachdb-2.cockroachdb.cockroachdb.svc.us-east
-#       port: 8080
-#       weight: 100
