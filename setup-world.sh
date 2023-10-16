@@ -1,15 +1,32 @@
 set -e
 
-#( cd the-world/server && docker build -t the-world:0.0.1 . )
+VERSION=0.0.1
+TAG=$DOCKER_REGISTRY/the-world:$VERSION
 
-set +e
+if [ -z "$DOCKER_REGISTRY" ]; then
+    TAG=the-world:$VERSION
+fi
+
+( cd the-world/server && docker build -t $TAG . )
+
+if [ -n "$DOCKER_REGISTRY" ]; then
+    docker push $TAG
+fi
 
 for ctx in us-east us-west eu-central; do
-#    k3d image import the-world:0.0.1 -c $ctx
+    if [ -z "$DOCKER_REGISTRY" ]; then
+        k3d image import $TAG -c $ctx
+    fi
 
-#    kubectl --context $ctx create ns world
-    linkerd inject the-world/k8s/world-gui.yaml | kubectl --context $ctx apply -f -
-    linkerd inject the-world/k8s/world.yaml | kubectl --context $ctx apply -f -
+    kubectl --context $ctx create ns world
+
+    sed -e "s/%TAG%/$TAG/" < the-world/k8s/world-gui.yaml | \
+        linkerd inject - | \
+        kubectl --context $ctx apply -f -
+
+    sed -e "s/%TAG%/$TAG/" < the-world/k8s/world.yaml | \
+        linkerd inject - | \
+        kubectl --context $ctx apply -f -
 done
 
 for ctx in us-east us-west eu-central; do

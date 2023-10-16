@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: world-gui
-        image: the-world:0.0.1
+        image: %TAG%
         ports:
         - name: http
           containerPort: 8888

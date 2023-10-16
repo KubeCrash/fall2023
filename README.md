@@ -94,6 +94,11 @@ bash ./setup-emissary.sh
 
 #### Set up the World
 
+For this next bit, you can set `DOCKER_REGISTRY` to something you can push to
+(like `DOCKER_REGISTRY=docker/dwflynn`) to use images in that registry, or you
+can leave `DOCKER_REGISTRY` unset to use `k3d image load` for your images
+instead.
+
 ``` sh
 bash ./setup-world.sh
 ```
