@@ -147,7 +147,7 @@ GRANT ALL ON DATABASE defaultdb TO rob WITH GRANT OPTION;
 GRANT SYSTEM ALL PRIVILEGES TO rob;
 ```
 
-Enable enterprise features
+Enable CockroachDB enterprise features
 
 ``` sql
 SELECT crdb_internal.cluster_id();
@@ -164,6 +164,8 @@ kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 
 #### Cleanup
 
+##### Drop CockroachDB tables and reinitialize
+
 To just shred CockroachDB's tables and reinitialize, run
 
 ``` sh
@@ -171,24 +173,34 @@ bash deinit-cockroachdb.sh
 bash init-cockroachdb.sh
 ```
 
+##### Redeploy the world
+
+To rebuild & redeploy the world (maybe you changed the GUI or the Go code):
+
 ``` sh
-k3d cluster delete us-east
-k3d cluster delete us-west
-k3d cluster delete eu-central
+kubectl delete --context eu-central ns world
+kubectl delete --context us-east ns world
+kubectl delete --context us-west ns world
+bash setup-world.sh
 ```
 
-Or if you just want to reinstall CockroachDB:
+##### Completely reinstall CockroachDB
+
+To _completely_ delete and reinstall CockroachDB:
 
 ``` sh
 kubectl delete --context eu-central ns cockroachdb
 kubectl delete --context us-east ns cockroachdb
 kubectl delete --context us-west ns cockroachdb
+bash setup-cockroachdb.sh
 ```
 
-Then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl
-apply` commands for CockroachDB.
+##### Completely start over
+
+To shred all three clusters and completely start over:
 
 ``` sh
-rm -rf certs
-rm -rf my-safe-directory
+k3d cluster delete us-east us-west eu-central
 ```
+
+Then start over with this README.
