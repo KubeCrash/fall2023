@@ -83,37 +83,14 @@ docker run --rm -it \
 
 ### Kubernetes
 
-#### Create the cluster
+#### Create the cluster with Linkerd and Emissary
 
 ``` sh
 bash ./create-clusters.sh
 bash ./setup-linkerd.sh
+bash ./setup-cockroach.sh
 bash ./setup-emissary.sh
-
-# Namespace and certs for CockrochDB.
-bash setup-cockroach.sh
 ```
-
-Install CockroachDB into the clusters
-
-``` sh
-linkerd inject the-world/k8s/cockroachdb-eu-central.yaml | kubectl apply --context eu-central -f -
-linkerd inject the-world/k8s/cockroachdb-us-east.yaml | kubectl apply --context us-east -f -
-linkerd inject the-world/k8s/cockroachdb-us-west.yaml | kubectl apply --context us-west -f -
-```
-
-Initialise CockroachDB
-
-``` sh
-kubectl exec \
-   --context eu-central \
-   -it cockroachdb-0 -c cockroachdb \
-   --namespace cockroachdb \
-   -- /cockroach/cockroach init \
-      --certs-dir=/cockroach/cockroach-certs
-```
-
-#### TBD: Create the initial DB tables, etc.
 
 #### Set up the World
 
@@ -122,6 +99,16 @@ bash ./setup-world.sh
 ```
 
 #### Random debugging stuff
+
+Enter bash shell
+
+``` sh
+kubectl exec \
+   --context eu-central \
+   -it cockroachdb-0 -c cockroachdb \
+   --namespace cockroachdb \
+   -- bash
+```
 
 Enter SQL shell
 
@@ -157,6 +144,13 @@ kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 ```
 
 #### Cleanup
+
+To just shred CockroachDB's tables and reinitialize, run
+
+``` sh
+bash deinit-cockroachdb.sh
+bash init-cockroachdb.sh
+```
 
 ``` sh
 k3d cluster delete us-east
