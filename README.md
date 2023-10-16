@@ -148,7 +148,7 @@ Enable enterprise features
 ``` sql
 SELECT crdb_internal.cluster_id();
 -- crl-lic -months 1 -org 'KubeCrash 2023' -type 'Evaluation' <CLUSTER_ID>
-SET CLUSTER SETTING cluster.organisation = '';
+SET CLUSTER SETTING cluster.organization = '';
 SET CLUSTER SETTING enterprise.license = '';
 ```
 
@@ -174,10 +174,10 @@ kubectl delete --context us-east ns cockroachdb
 kubectl delete --context us-west ns cockroachdb
 ```
 
-then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl
+Then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl
 apply` commands for CockroachDB.
 
 ``` sh
-rm *.crt
-rm *.key
+rm -rf certs
+rm -rf my-safe-directory
 ```
