@@ -98,6 +98,25 @@ bash ./setup-emissary.sh
 bash ./setup-world.sh
 ```
 
+After that you can e.g. `open http://localhost:8080/world/` to get the us-east
+GUI. The us-west GUI is on port 8081; eu-central is on 8082.
+
+**Note:** the GUI is inefficient right now; every couple of seconds, it just
+reloads the world, which isn't necessarily all that nice to the database. This
+is very low on my priority list. [ :) ]
+
+#### Run a player
+
+``` sh
+cd the-world/server
+PLAYER_NAME=US go run .
+```
+
+This needs proper command line handling by now. Also note that players are
+always North American right now, which is part of why we need proper
+command-line handling (or we need to just derive the region from the player
+name).
+
 #### Random debugging stuff
 
 Enter bash shell

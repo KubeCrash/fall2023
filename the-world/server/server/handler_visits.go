@@ -13,10 +13,11 @@ import (
 
 func (s *Server) visitHandler(c *fiber.Ctx) error {
 	name := c.Params("name")
+	player := c.Query("player")
 	smiley := c.Query("smiley")
 	region := c.Query("region")
 
-	if err := visitCell(c.Context(), s.db, name, smiley, region); err != nil {
+	if err := visitCell(c.Context(), s.db, name, player, smiley, region); err != nil {
 		log.Printf("database error: %v", err)
 		return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("database error: %v", err))
 	}
@@ -29,10 +30,10 @@ func (s *Server) visitHandler(c *fiber.Ctx) error {
 	return c.JSON(cell)
 }
 
-func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) error {
+func visitCell(ctx context.Context, db *sql.DB, name, player, smiley, region string) error {
 	now := time.Now()
 
-	fmt.Printf("%s: cell %s, smiley %s, region %s\n", now, name, smiley, region)
+	fmt.Printf("%s: cell %s, player %s, smiley %s, region %s\n", now, name, player, smiley, region)
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -42,14 +43,27 @@ func visitCell(ctx context.Context, db *sql.DB, name, smiley, region string) err
 
 	defer tx.Rollback()
 
-	if _, err = tx.ExecContext(ctx, `INSERT INTO cells (name, smiley, crdb_region)
-																	 VALUES ($1, $2, user_to_db_region($3))
-																	 ON CONFLICT(name) DO UPDATE SET smiley = $2`, name, smiley, region); err != nil {
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO locations (player_name, cell_name)
+				VALUES ($1, $2)
+				ON CONFLICT (player_name) DO
+					UPDATE SET cell_name = $2`, player, name)
+
+	if err != nil {
+		log.Printf("could not upsert location: %v", err)
+		return fmt.Errorf("could not upsert location: %w", err)
+	}
+
+	if _, err = tx.ExecContext(ctx,
+		`INSERT INTO cells (name, smiley, crdb_region)
+				VALUES ($1, $2, $3)
+				ON CONFLICT(name) DO
+					UPDATE SET smiley = $2`, name, smiley, region); err != nil {
 		log.Printf("could not upsert smiley: %v", err)
 		return fmt.Errorf("could not upsert smiley: %w", err)
 	}
 
-	if _, err = tx.Exec(`INSERT INTO visits (cell_name, crdb_region, timestamp) VALUES ($1, user_to_db_region($2), $3)`, name, region, now); err != nil {
+	if _, err = tx.Exec(`INSERT INTO visits (cell_name, crdb_region, timestamp) VALUES ($1, $2, $3)`, name, region, now); err != nil {
 		log.Printf("could not upsert visitor: %v", err)
 		return fmt.Errorf("could not upsert visitor: %w", err)
 	}
