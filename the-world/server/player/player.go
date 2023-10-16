@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/buoyantio/flag-demo/server/model"
@@ -122,7 +123,15 @@ func (player *Player) getLocation() (string, error) {
 	url := fmt.Sprintf("%s/cells/", player.BaseURL)
 
 	fmt.Printf("Getting location for %s: %s\n", player.Name, url)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return "", fmt.Errorf("Error creating location request: %w", err)
+	}
+
+	req.SetBasicAuth(strings.ToLower(player.Name), strings.ToLower(player.Name))
+
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		return "", fmt.Errorf("Error getting location: %w", err)
@@ -173,7 +182,16 @@ func (player *Player) visit(location string, smiley string) (*model.Cell, error)
 		url.QueryEscape(smiley),
 		url.QueryEscape(player.Region))
 
-	resp, err := http.Post(url, "application/json", nil)
+	req, err := http.NewRequest("POST", url, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error creating location request: %w", err)
+	}
+
+	req.SetBasicAuth(strings.ToLower(player.Name), strings.ToLower(player.Name))
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
 		return nil, fmt.Errorf("Error visiting cell: %w", err)
