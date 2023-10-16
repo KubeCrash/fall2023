@@ -9,6 +9,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Package
 FROM alpine:3.18.3
-COPY --from=build /go/src/app /
-COPY --from=build /go/src/ui /ui
-ENTRYPOINT ["/app"]
+RUN mkdir /world
+COPY --from=build /go/src/world /world
+COPY --from=build /go/src/ui /world/ui
+WORKDIR /world
+ENTRYPOINT ["/world/world"]
