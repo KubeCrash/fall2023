@@ -1,4 +1,8 @@
-#(cd the-world/server; docker build -t the-world:0.0.1 .)
+set -e
+
+#( cd the-world/server && docker build -t the-world:0.0.1 . )
+
+set +e
 
 for ctx in us-east us-west eu-central; do
 #    k3d image import the-world:0.0.1 -c $ctx

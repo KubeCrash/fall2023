@@ -4,7 +4,8 @@ WORKDIR /go/src
 COPY . .
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o app server.go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -o world server.go
 
 # Package
 FROM alpine:3.18.3
