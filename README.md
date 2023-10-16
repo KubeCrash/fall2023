@@ -2,8 +2,7 @@
 
 This is the World demo.
 
-**It is very much WIP.** In particular, there's no K8s code at all in here
-yet.
+**It is very much WIP.**
 
 You'll need `kubectl`, `linkerd`, and `step` to run this.
 
@@ -120,7 +119,6 @@ kubectl exec \
 
 ``` sh
 bash ./setup-world.sh
-kubectl apply -f emissary-yaml
 ```
 
 #### Random debugging stuff

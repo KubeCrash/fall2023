@@ -1,0 +1,57 @@
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: route-to-us-east
+  namespace: emissary
+spec:
+  hostname: '*'
+  precedence: 100
+  add_response_headers:
+    x-routed-from: eu
+    x-routed-to: us
+  headers:
+    x-region-target: us
+  prefix: /
+  service: http://emissary-ingress-us-east
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: cells-mapping
+  namespace: world
+spec:
+  precedence: 90
+  hostname: '*'
+  prefix: /cells/
+  service: world.world
+  rewrite: /cells/
+  timeout_ms: 0
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: gui-mapping
+  namespace: world
+spec:
+  precedence: 90
+  hostname: '*'
+  prefix: /world/
+  service: world-gui.world
+  rewrite: /
+  timeout_ms: 0
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: viz-example-mapping
+  namespace: linkerd
+spec:
+  prefix: /
+  hostname: '*'
+  service: web.linkerd-viz.svc.cluster.local:8084
+  host_rewrite: web.linkerd-viz.svc.cluster.local:8084
+  remove_request_headers:
+    - Origin
+  allow_upgrade:
+    - websocket

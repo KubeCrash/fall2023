@@ -2,19 +2,8 @@
 apiVersion: getambassador.io/v3alpha1
 kind: Listener
 metadata:
-  name: ambassador-https-listener
-spec:
-  port: 8443
-  protocol: HTTPS
-  securityModel: XFP
-  hostBinding:
-    namespace:
-      from: ALL
----
-apiVersion: getambassador.io/v3alpha1
-kind: Listener
-metadata:
-  name: ambassador-http-listener
+  name: emissary-ingress-http-listener
+  namespace: emissary
 spec:
   port: 8080
   protocol: HTTP
@@ -24,11 +13,24 @@ spec:
       from: ALL
 ---
 apiVersion: getambassador.io/v3alpha1
+kind: Listener
+metadata:
+  name: emissary-ingress-https-listener
+  namespace: emissary
+spec:
+  port: 8443
+  protocol: HTTPS
+  securityModel: XFP
+  hostBinding:
+    namespace:
+      from: ALL
+---
+apiVersion: getambassador.io/v3alpha1
 kind: Host
 metadata:
-  name: wildcard-host
+  name: wildcard
 spec:
-  hostname: "*"
+  hostname: '*'
   requestPolicy:
     insecure:
-      action: Route
+      action: 'Route'

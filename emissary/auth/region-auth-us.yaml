@@ -1,0 +1,61 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: region-routing-auth
+  namespace: emissary
+spec:
+  type: ClusterIP
+  selector:
+    app: region-routing-auth
+  ports:
+    - port: 3000
+      name: http-region-auth
+      targetPort: http-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: region-routing-auth
+  namespace: emissary
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: region-routing-auth
+  template:
+    metadata:
+      labels:
+        app: region-routing-auth
+    spec:
+      containers:
+        - name: region-routing-auth
+          image: thedevelopnik/kubecrash-fall-23-auth:1.0.2
+          imagePullPolicy: Always
+          env:
+            - name: REGION
+              value: 'us'
+          ports:
+            - name: http-api
+              containerPort: 3000
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: 300Mi
+---
+apiVersion: getambassador.io/v3alpha1
+kind: AuthService
+metadata:
+  name: region-routing-authentication
+  namespace: emissary
+spec:
+  auth_service: "region-routing-auth:3000"
+  path_prefix: "/extauth"
+  allowed_request_headers:
+    - "x-world-session"
+    - "x-region-target"
+  allowed_authorization_headers:
+    - "x-world-session"
+    - "x-region-target"
