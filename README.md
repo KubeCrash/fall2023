@@ -83,45 +83,56 @@ docker run --rm -it \
 
 ### Kubernetes
 
-#### Create the cluster
+#### Create the cluster with Linkerd and Emissary
 
 ``` sh
 bash ./create-clusters.sh
 bash ./setup-linkerd.sh
+bash ./setup-cockroach.sh
 bash ./setup-emissary.sh
-
-# Namespace and certs for CockrochDB.
-bash setup-cockroach.sh
 ```
 
-Install CockroachDB into the clusters
+#### Set up the World
+
+For this next bit, you can set `DOCKER_REGISTRY` to something you can push to
+(like `DOCKER_REGISTRY=docker/dwflynn`) to use images in that registry, or you
+can leave `DOCKER_REGISTRY` unset to use `k3d image load` for your images
+instead.
 
 ``` sh
-linkerd inject the-world/k8s/cockroachdb-eu-central.yaml | kubectl apply --context eu-central -f -
-linkerd inject the-world/k8s/cockroachdb-us-east.yaml | kubectl apply --context us-east -f -
-linkerd inject the-world/k8s/cockroachdb-us-west.yaml | kubectl apply --context us-west -f -
+bash ./setup-world.sh
 ```
 
-Initialise CockroachDB
+After that you can e.g. `open http://localhost:8080/world/` to get the us-east
+GUI. The us-west GUI is on port 8081; eu-central is on 8082.
+
+**Note:** the GUI is inefficient right now; every couple of seconds, it just
+reloads the world, which isn't necessarily all that nice to the database. This
+is very low on my priority list. [ :) ]
+
+#### Run a player
+
+``` sh
+cd the-world/server
+PLAYER_NAME=US go run .
+```
+
+This needs proper command line handling by now. Also note that players are
+always North American right now, which is part of why we need proper
+command-line handling (or we need to just derive the region from the player
+name).
+
+#### Random debugging stuff
+
+Enter bash shell
 
 ``` sh
 kubectl exec \
    --context eu-central \
    -it cockroachdb-0 -c cockroachdb \
    --namespace cockroachdb \
-   -- /cockroach/cockroach init \
-      --certs-dir=/cockroach/cockroach-certs
+   -- bash
 ```
-
-#### TBD: Create the initial DB tables, etc.
-
-#### Set up the World
-
-``` sh
-bash ./setup-world.sh
-```
-
-#### Random debugging stuff
 
 Enter SQL shell
 
@@ -141,7 +152,7 @@ GRANT ALL ON DATABASE defaultdb TO rob WITH GRANT OPTION;
 GRANT SYSTEM ALL PRIVILEGES TO rob;
 ```
 
-Enable enterprise features
+Enable CockroachDB enterprise features
 
 ``` sql
 SELECT crdb_internal.cluster_id();
@@ -158,24 +169,43 @@ kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 
 #### Cleanup
 
+##### Drop CockroachDB tables and reinitialize
+
+To just shred CockroachDB's tables and reinitialize, run
+
 ``` sh
-k3d cluster delete us-east
-k3d cluster delete us-west
-k3d cluster delete eu-central
+bash deinit-cockroachdb.sh
+bash init-cockroachdb.sh
 ```
 
-Or if you just want to reinstall CockroachDB:
+##### Redeploy the world
+
+To rebuild & redeploy the world (maybe you changed the GUI or the Go code):
+
+``` sh
+kubectl delete --context eu-central ns world
+kubectl delete --context us-east ns world
+kubectl delete --context us-west ns world
+bash setup-world.sh
+```
+
+##### Completely reinstall CockroachDB
+
+To _completely_ delete and reinstall CockroachDB:
 
 ``` sh
 kubectl delete --context eu-central ns cockroachdb
 kubectl delete --context us-east ns cockroachdb
 kubectl delete --context us-west ns cockroachdb
+bash setup-cockroachdb.sh
 ```
 
-Then rerun `setup-cockroachdb.sh` and rerun the `linkerd inject | kubectl
-apply` commands for CockroachDB.
+##### Completely start over
+
+To shred all three clusters and completely start over:
 
 ``` sh
-rm -rf certs
-rm -rf my-safe-directory
+k3d cluster delete us-east us-west eu-central
 ```
+
+Then start over with this README.

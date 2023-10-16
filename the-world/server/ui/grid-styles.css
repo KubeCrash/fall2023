@@ -16,7 +16,7 @@
 }
 
 .na-map {
-  background-image: url("/world.svg");
+  background-image: url("/world/world.svg");
   background-repeat: no-repeat;
   background-position: -125 -220;
   background-size: 3000px;
@@ -26,8 +26,8 @@
   display: grid;
   /* width: 375px;
   height: 225px; */
-  grid-auto-columns: 48px;
-  grid-auto-rows: 48px;
+  grid-auto-columns: 64px;
+  grid-auto-rows: 64px;
   /* border: 1px solid blue; */
   grid-template-areas:
     "na00 na01 na02 na03 na04 na05"
@@ -43,7 +43,7 @@
 }
 
 .eu-map {
-  background-image: url("/world.svg");
+  background-image: url("/world/world.svg");
   background-repeat: no-repeat;
   background-position: -1650px -240px;
   background-size: 4400px;
@@ -53,8 +53,8 @@
   display: grid;
   /* width: 375px;
   height: 225px; */
-  grid-auto-columns: 48px;
-  grid-auto-rows: 48px;
+  grid-auto-columns: 64px;
+  grid-auto-rows: 64px;
   grid-template-areas:
   "eu00 eu01 eu02 eu03 eu04 eu05"
   "eu06 eu07 eu08 eu09 eu10 eu11"
@@ -79,7 +79,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24pt;
+    font-size: 32pt;
     position: relative;
 }
 
@@ -87,10 +87,10 @@
     position: absolute;
     bottom: 1px;
     right: 1px;
-    font-size: 20px;
+    font-size: 32px;
     border-radius: 50%;
-    height: 20px;
-    border: 1px solid grey;
+    height: 32px;
+    border: 2px solid grey;
     background: white;
     overflow:  hidden;
     display: none;  /* This will be overridden in JavaScript, but start hidden. */

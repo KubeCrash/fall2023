@@ -222,8 +222,12 @@ class Player {
 // This represents information about a set of cells in the world.
 
 class CellSet {
-    constructor(logger) {
+    constructor(logger, fetchInterval) {
         this.logger = logger
+        this.fetchInterval = fetchInterval
+
+        this.active = false
+        this.locations = {}
 
         // When we start up, we don't know what cells exist.
         // We have to read that from the database.
@@ -237,12 +241,22 @@ class CellSet {
     }
 
     start() {
+        if (this.active) {
+            return
+        }
+
         this.logger.info("CellSet START")
+        this.active = true
         this.update()
     }
 
     stop() {
+        if (!this.active) {
+            return
+        }
+
         this.logger.info("CellSet STOP")
+        this.active = false
 
         if (this.allCells != null) {
             for (let cell of this.allCells) {
@@ -284,7 +298,7 @@ class CellSet {
 
                 if (this.allCells == null) {
                     // We're initializing. First up, save the full list of cells...
-                    let allCells = Object.keys(world)
+                    let allCells = Object.keys(world.cells)
 
                     // ...then create a Cell object for each one.
                     for (let cell of allCells) {
@@ -298,7 +312,7 @@ class CellSet {
 
                 // Now, update each cell.
                 for (let cellName of this.allCells) {
-                    let cell = world[cellName]
+                    let cell = world.cells[cellName]
 
                     if (cell != null) {
                         this.cells[cellName].visit(cell.smiley, cell.recents, cell.totals)
@@ -309,8 +323,33 @@ class CellSet {
                 }
 
                 this.logger.info(`CellSet update: ${this.allCells.length} cells`)
+
+                // Next, mark locations.
+                for (let player in world.locations) {
+                    let location = world.locations[player]
+
+                    // Is this player visible?
+                    if (player in this.locations) {
+                        // Yes; clear it.
+                        let oldLocation = this.locations[player]
+
+                        $(`${oldLocation}-player`).innerHTML = ""
+                        $(`${oldLocation}-player`).style.display = "none"
+                    }
+
+                    // Update the location...
+                    this.locations[player] = location
+
+                    // ...and show the player.
+                    $(`${location}-player`).innerHTML = Flags[player]
+                    $(`${location}-player`).style.display = "flex"
+                }
             }
         })
+
+        if (this.active && (this.fetchInterval > 0)) {
+            setTimeout(() => { this.update() }, this.fetchInterval)
+        }
     }
 }
 
@@ -519,16 +558,16 @@ window.onload = () => {
 
     let overlord = new Overlord(logger, $(btnToggle))
 
-    let cs = new CellSet(logger)
+    let cs = new CellSet(logger, 2000)
     overlord.addManaged(cs)
 
-    overlord.addManaged(new Player(logger, cs, "US", "NA",
-                                    [ "grinning", "smiling-open",
-                                      "smiling-closed", "smiling-tightly-closed" ]))
-    overlord.addManaged(new Player(logger, cs, "CA", "NA",
-                                    [ "innocent", "joy", "sweat-smile", "rofl" ]))
-    overlord.addManaged(new Player(logger, cs, "ES", "EU",
-                                    [ "smiling", "relieved", "heart-eyes", "shades" ]))
-    overlord.addManaged(new Player(logger, cs, "DE", "EU",
-                                    [ "rolling-eyes", "thinking", "hand-over-mouth", "shushing" ]))
+    // overlord.addManaged(new Player(logger, cs, "US", "NA",
+    //                                 [ "grinning", "smiling-open",
+    //                                   "smiling-closed", "smiling-tightly-closed" ]))
+    // overlord.addManaged(new Player(logger, cs, "CA", "NA",
+    //                                 [ "innocent", "joy", "sweat-smile", "rofl" ]))
+    // overlord.addManaged(new Player(logger, cs, "ES", "EU",
+    //                                 [ "smiling", "relieved", "heart-eyes", "shades" ]))
+    // overlord.addManaged(new Player(logger, cs, "DE", "EU",
+    //                                 [ "rolling-eyes", "thinking", "hand-over-mouth", "shushing" ]))
 }

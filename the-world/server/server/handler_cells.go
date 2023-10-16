@@ -10,6 +10,30 @@ import (
 )
 
 func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
+	// Start by grabbing all the locations from the server.
+	rows, err := s.db.Query(`SELECT * from locations`)
+	if err != nil {
+		fmt.Printf("error loading locations: %v\n", err)
+		return fiber.NewError(http.StatusInternalServerError, "Database error")
+	}
+	defer rows.Close()
+
+	locations := make(map[string]string)
+
+	for rows.Next() {
+		var player string
+		var cell_name string
+
+		err = rows.Scan(&player, &cell_name)
+
+		if err != nil {
+			fmt.Printf("error scanning locations: %v\n", err)
+			return fiber.NewError(http.StatusInternalServerError, "Database error")
+		}
+
+		locations[player] = cell_name
+	}
+
 	// Yes, this is some hairy SQL. It joins the cells table with two separate
 	// subqueries: the first one partitions the visits table by cell name,
 	// then counts the regions in the 10 most recent visits for each cell, and
@@ -58,7 +82,7 @@ func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
 		JOIN y ON c.name = y.cell_name
 		JOIN z ON (c.name = z.cell_name) AND (y.region = z.crdb_region)`
 
-	rows, err := s.db.Query(stmt)
+	rows, err = s.db.Query(stmt)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return fiber.NewError(http.StatusInternalServerError, "Database error")
@@ -119,9 +143,14 @@ func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	fmt.Printf("GET all cells: %v\n", cells)
+	world := &model.World{
+		Locations: locations,
+		Cells:     cells,
+	}
 
-	return c.JSON(cells)
+	fmt.Printf("GET the world: %v\n", world)
+
+	return c.JSON(world)
 }
 
 func (s *Server) getCellHandler(c *fiber.Ctx) error {
@@ -144,7 +173,7 @@ func getCell(db *sql.DB, name string) (*model.Cell, error) {
 	}
 
 	recents, err := getVisitorCounts(db, name, `
-        SELECT db_to_user_region(crdb_region), count(crdb_region) FROM
+        SELECT crdb_region, count(crdb_region) FROM
             (SELECT crdb_region FROM visits WHERE cell_name = $1
                 ORDER BY timestamp DESC LIMIT 10)
             GROUP BY crdb_region`)
@@ -154,7 +183,7 @@ func getCell(db *sql.DB, name string) (*model.Cell, error) {
 	}
 
 	totals, err := getVisitorCounts(db, name, `
-        SELECT db_to_user_region(crdb_region), count(crdb_region)
+        SELECT crdb_region, count(crdb_region)
 				FROM visits
 				WHERE cell_name = $1
         GROUP BY crdb_region`)

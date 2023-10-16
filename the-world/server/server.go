@@ -6,13 +6,29 @@ import (
 	"log"
 	"os"
 
+	"github.com/buoyantio/flag-demo/server/player"
 	"github.com/buoyantio/flag-demo/server/server"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
 	var db *sql.DB = nil
 	var err error
+
+	playerName, ok := os.LookupEnv("PLAYER_NAME")
+
+	if ok {
+		player := player.New(
+			"http://localhost:8080",
+			playerName,
+			"NA",
+			[]string{"winking", "smirking", "screaming", "flushed"},
+		)
+
+		player.Run()
+		return
+	}
 
 	connectionString, ok := os.LookupEnv("CONNECTION_STRING")
 

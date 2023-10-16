@@ -8,3 +8,9 @@ type Cell struct {
 	Totals       map[string]int `json:"totals"`
 	Destinations []string       `json:"destinations"`
 }
+
+// World describes the world as a whole.
+type World struct {
+	Locations map[string]string `json:"locations"`
+	Cells     map[string]*Cell  `json:"cells"`
+}
