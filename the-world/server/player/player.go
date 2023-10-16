@@ -13,6 +13,14 @@ import (
 	"github.com/buoyantio/flag-demo/server/model"
 )
 
+type PlayerInfo struct {
+	Region    string
+	SmileySet string
+}
+
+var SmileySets map[string][]string
+var PlayerDefaults map[string]PlayerInfo
+
 type Player struct {
 	BaseURL string
 	Name    string
@@ -23,17 +31,54 @@ type Player struct {
 	cellVisits map[string]int
 }
 
-func New(baseURL string, name string, region string, smilies []string) *Player {
+func InitStandardPlayers() {
+	SmileySets = map[string][]string{
+		"grinning":     {"grinning", "smiling-open", "smiling-closed", "smiling-tightly-closed"},
+		"innocent":     {"innocent", "joy", "sweat-smile", "rofl"},
+		"smiling":      {"smiling", "relieved", "heart-eyes", "shades"},
+		"rolling-eyes": {"rolling-eyes", "thinking", "hand-over-mouth", "shushing"},
+		"missing":      {"flushed"},
+	}
+
+	PlayerDefaults = map[string]PlayerInfo{
+		"US": {Region: "NA", SmileySet: "grinning"},
+		"CA": {Region: "NA", SmileySet: "innocent"},
+		"DE": {Region: "EU", SmileySet: "smiling"},
+		"ES": {Region: "EU", SmileySet: "rolling-eyes"},
+	}
+}
+
+func New(baseURL string, name string, region string, smileyset string, sleepsec float64) *Player {
+	if SmileySets == nil {
+		InitStandardPlayers()
+	}
+
+	if region == "" {
+		region = PlayerDefaults[name].Region
+	}
+
+	smilies := SmileySets[smileyset]
+
+	if smilies == nil {
+		smilies = SmileySets[PlayerDefaults[name].SmileySet]
+	}
+
+	if sleepsec <= 0 {
+		sleepsec = 4
+	}
+
+	fmt.Printf("New player %s in %s, sleep %.1fs, smilies %s\n",
+		name, region, sleepsec, smilies)
+
 	p := &Player{
 		BaseURL: baseURL,
 		Name:    name,
 		Region:  region,
 		Smilies: smilies,
 
-		sleepTime: 4 * time.Second,
+		cellVisits: make(map[string]int),
+		sleepTime:  time.Duration(sleepsec) * time.Second,
 	}
-
-	p.cellVisits = make(map[string]int)
 
 	return p
 }
