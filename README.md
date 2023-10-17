@@ -41,16 +41,19 @@ is very low on my priority list. [ :) ]
 
 ### Run a player
 
-The GUI won't show you much until one or more players is running.
+We start four players (CA, DE, ES, and US) running inside the cluster. You can
+start more:
 
 ``` sh
 cd the-world/server
 go run . --player US
 ```
 
-Valid players are US, CA, DE, and ES. US and CA are in the North American
-region, DE and ES are in the European region. They are represented by country
-flags.
+though at the moment the only valid players are US, CA, DE, and ES.
+
+US and CA are in the North American region, DE and ES are in the European
+region. They are represented by country flags. If you want to support
+additional players, see the-world/server/player/player.go.
 
 ### Random debugging stuff
 
