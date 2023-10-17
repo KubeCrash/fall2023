@@ -27,6 +27,8 @@ spec:
       app: region-routing-auth
   template:
     metadata:
+      annotations:
+        linkerd.io/inject: enabled
       labels:
         app: region-routing-auth
     spec:
