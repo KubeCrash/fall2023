@@ -9,90 +9,19 @@ You'll need `kubectl`, `linkerd`, and `step` to run this.
 linkerd — https://linkerd.io/2/getting-started/
 step — https://smallstep.com/docs/step-cli/installation
 
-### Local
+The World demo uses three clusters, named us-east, us-west, and eu-central.
+By default, all three are created using k3d.
 
-What is in here is a single-page web app and a backing Go server that stores
-data in SQLite. To play with it:
-
-1. In one shell window:
+## Setting Up the Infrastructure
 
 ``` sh
-cockroach demo --global --no-example-database --nodes 9
+bash ./create-clusters.sh  # Create the clusters
+bash ./setup-linkerd.sh    # Set up Linkerd to connect them all
+bash ./setup-cockroach.sh  # Fire up CockroachDB
+bash ./setup-emissary.sh   # Set up Emissary for ingress
 ```
 
-And once in the CockroachDB shell, execute the script in create.sql.
-
-2. In a second window:
-
-``` sh
-cd the-world/server
-
-CONNECTION_STRING=postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@localhost:26257/the_world?sslmode=allow \
-   go run .
-```
-
-Sample requests
-
-``` sh
-curl -s "http://localhost:8888/cells"
-curl -s "http://localhost:8888/cells/na10"
-```
-
-3. In a third window:
-
-``` sh
-cd the-world/data
-python -m http.server 8081
-```
-
-4. Finally, open a web browser to `http://localhost:8081/`. Watch the little
-   flags move around and leave trails of smileys.
-
-The US and Canadian flags will turn cells more red. The German and Spanish
-flags will turn them more green. All flags will prefer to move to the
-neighboring cell they've visited least. There are a few cells where they get
-to cross the Atlantic.
-
-To reset everything:
-
-- kill the server
-- stop cockroach (the `demo` command doesn't persist anything)
-- start cockroach
-- restart the server
-
-Finally, the scripts in `the-world/hack` are the basis for some of the more
-irritatingly verbose bits.
-
-### Docker
-
-Create a docker image
-
-``` sh
-(cd server && docker build -t the-world .)
-```
-
-Run the docker image
-
-``` sh
-docker run --rm -it \
-   --name the-world \
-   -p 8888:8888 \
-   -e CONNECTION_STRING="postgres://world_service:EcSljwBeVIG42KLO0LS3jtuh9x6RMcOBZEWFSk@host.docker.internal:26257/the_world?sslmode=allow" \
-      the-world
-```
-
-### Kubernetes
-
-#### Create the cluster with Linkerd and Emissary
-
-``` sh
-bash ./create-clusters.sh
-bash ./setup-linkerd.sh
-bash ./setup-cockroach.sh
-bash ./setup-emissary.sh
-```
-
-#### Set up the World
+## Start up the Application
 
 For this next bit, you can set `DOCKER_REGISTRY` to something you can push to
 (like `DOCKER_REGISTRY=docker/dwflynn`) to use images in that registry, or you
@@ -110,19 +39,20 @@ GUI. The us-west GUI is on port 8081; eu-central is on 8082.
 reloads the world, which isn't necessarily all that nice to the database. This
 is very low on my priority list. [ :) ]
 
-#### Run a player
+### Run a player
+
+The GUI won't show you much until one or more players is running.
 
 ``` sh
 cd the-world/server
-PLAYER_NAME=US go run .
+go run . --player US
 ```
 
-This needs proper command line handling by now. Also note that players are
-always North American right now, which is part of why we need proper
-command-line handling (or we need to just derive the region from the player
-name).
+Valid players are US, CA, DE, and ES. US and CA are in the North American
+region, DE and ES are in the European region. They are represented by country
+flags.
 
-#### Random debugging stuff
+### Random debugging stuff
 
 Enter bash shell
 
@@ -167,9 +97,9 @@ Port forward to HTTP port, open browser, and login
 kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 ```
 
-#### Cleanup
+### Cleanup
 
-##### Drop CockroachDB tables and reinitialize
+#### Drop CockroachDB tables and reinitialize
 
 To just shred CockroachDB's tables and reinitialize, run
 
@@ -178,7 +108,7 @@ bash deinit-cockroachdb.sh
 bash init-cockroachdb.sh
 ```
 
-##### Redeploy the world
+#### Redeploy the world
 
 To rebuild & redeploy the world (maybe you changed the GUI or the Go code):
 
@@ -189,7 +119,7 @@ kubectl delete --context us-west ns world
 bash setup-world.sh
 ```
 
-##### Completely reinstall CockroachDB
+#### Completely reinstall CockroachDB
 
 To _completely_ delete and reinstall CockroachDB:
 
@@ -200,7 +130,7 @@ kubectl delete --context us-west ns cockroachdb
 bash setup-cockroachdb.sh
 ```
 
-##### Completely start over
+#### Completely start over
 
 To shred all three clusters and completely start over:
 
