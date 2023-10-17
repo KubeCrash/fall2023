@@ -22,7 +22,7 @@ install_emissary () {
 
     curl --proto '=https' --tlsv1.2 -sSfL $EMISSARY_INGRESS | \
         sed -e 's/replicas: 3/replicas: 1/' | \
-        linkerd inject - | kubectl --context "$ctx" apply -f -
+        linkerd --context "$ctx" inject - | kubectl --context "$ctx" apply -f -
 
     kubectl --context "$ctx" label service -n emissary emissary-ingress 'mirror.linkerd.io/exported=remote-discovery'
     kubectl apply --context "$ctx" -f emissary/listeners-and-host.yaml
