@@ -12,7 +12,9 @@ step — https://smallstep.com/docs/step-cli/installation
 The World demo uses three clusters, named us-east, us-west, and eu-central.
 By default, all three are created using k3d.
 
-## Setting Up the Infrastructure
+## K3d
+
+### Setting Up the Infrastructure
 
 ``` sh
 bash ./create-clusters.sh  # Create the clusters
@@ -21,7 +23,7 @@ bash ./setup-cockroach.sh  # Fire up CockroachDB
 bash ./setup-emissary.sh   # Set up Emissary for ingress
 ```
 
-## Start up the Application
+### Start up the Application
 
 For this next bit, you can set `DOCKER_REGISTRY` to something you can push to
 (like `DOCKER_REGISTRY=docker/dwflynn`) to use images in that registry, or you
@@ -54,6 +56,59 @@ though at the moment the only valid players are US, CA, DE, and ES.
 US and CA are in the North American region, DE and ES are in the European
 region. They are represented by country flags. If you want to support
 additional players, see the-world/server/player/player.go.
+
+## Civo
+
+You can also set up to run with Civo clusters. (Everything after step 1 should
+also work with other cloud clusters.)
+
+### 1. Create Civo clusters named `us-east`, `us-west`, and `eu-central`.
+
+(If you're using another cloud provider, just make sure you have the correct
+context names for your clusters.)
+
+``` sh
+bash ./create-civo.sh
+```
+
+### 2. Install Linkerd
+
+`CLUSTER_TYPE` tells the setup script that we're using a Civo cluster
+(honestly, this could be anything other than 'k3d'):
+
+``` sh
+CLUSTER_TYPE=civo bash ./setup-linkerd.sh
+```
+
+### 3. Install CockroachDB
+
+We don't need to do anything weird for CockroachDB.
+
+``` sh
+bash ./setup-cockroach.sh
+```
+
+### 4. Start Emissary
+
+Here we explicitly use gateway mirroring for Emissary's cross-cluster
+stuff. (If you used your own cloud and configured flat-network multicluster, you
+can skip setting `MIRROR_TYPE`.)
+
+``` sh
+MIRROR_TYPE=gateway bash ./setup-emissary.sh
+```
+
+### 5. Set up the Application
+
+You'll need to provide your own DOCKER_REGISTRY and WORLD_VERSION here, and
+you'll need a working multiplatform `docker buildx build`, because you need to
+actually push the built images somewhere for cloud provider clusters.
+
+**Don't forget to bump the version when you do new builds.**
+
+``` sh
+DOCKER_REGISTRY=... WORLD_VERSION=... bash ./setup-world.sh
+```
 
 ### Random debugging stuff
 

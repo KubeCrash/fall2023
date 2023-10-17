@@ -116,11 +116,11 @@ kubectl create secret \
 rm certs/node.crt
 rm certs/node.key
 
-linkerd inject the-world/k8s/cockroachdb-eu-central.yaml | \
+linkerd --context eu-central inject the-world/k8s/cockroachdb-eu-central.yaml | \
    kubectl apply --context eu-central -f -
-linkerd inject the-world/k8s/cockroachdb-us-east.yaml | \
+linkerd --context us-east inject the-world/k8s/cockroachdb-us-east.yaml | \
    kubectl apply --context us-east -f -
-linkerd inject the-world/k8s/cockroachdb-us-west.yaml | \
+linkerd --context us-west inject the-world/k8s/cockroachdb-us-west.yaml | \
    kubectl apply --context us-west -f -
 
 # Wait for all the CockroachDB nodes to show one ready Pod...
