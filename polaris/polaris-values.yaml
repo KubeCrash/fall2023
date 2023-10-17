@@ -1,0 +1,210 @@
+webhook:
+  enable: true
+  validate: true
+  mutate: false
+  failurePolicy: Ignore
+  podAdditionalLabels:
+    team: security
+dashboard:
+  podAdditionalLabels:
+    team: security
+  ingress:
+    enabled: false
+config:
+  checks:
+    # reliability
+    deploymentMissingReplicas: warning
+    priorityClassNotSet: ignore
+    tagNotSpecified: warning
+    pullPolicyNotAlways: warning
+    readinessProbeMissing: warning
+    livenessProbeMissing: warning
+    metadataAndInstanceMismatched: ignore
+    pdbDisruptionsIsZero: warning
+    missingPodDisruptionBudget: warning
+    topologySpreadConstraint: ignore
+
+    # efficiency
+    cpuRequestsMissing: warning
+    cpuLimitsMissing: warning
+    memoryRequestsMissing: warning
+    memoryLimitsMissing: warning
+
+    # security
+    automountServiceAccountToken: ignore
+    hostIPCSet: warning
+    hostPIDSet: warning
+    linuxHardening: warning
+    missingNetworkPolicy: ignore
+    notReadOnlyRootFilesystem: warning
+    privilegeEscalationAllowed: warning
+    runAsRootAllowed: warning
+    runAsPrivileged: warning
+    dangerousCapabilities: warning
+    insecureCapabilities: warning
+    hostNetworkSet: warning
+    hostPortSet: warning
+    tlsSettingsMissing: warning
+    sensitiveContainerEnvVar: warning
+    sensitiveConfigmapContent: warning
+    clusterrolePodExecAttach: warning
+    rolePodExecAttach: warning
+    clusterrolebindingPodExecAttach: warning
+    rolebindingClusterRolePodExecAttach: warning
+    rolebindingRolePodExecAttach: warning
+    clusterrolebindingClusterAdmin: warning
+    rolebindingClusterAdminClusterRole: warning
+    rolebindingClusterAdminRole: warning
+
+    # custom
+    imageRegistry: warning
+    resourceLimits: warning
+    hostPathMount: warning
+
+  customChecks:
+    imageRegistry:
+      successMessage: Image comes from allowed registries
+      failureMessage: Image should not be from disallowed registry
+      category: FWCustom
+      target: Container
+      schema:
+        '$schema': http://json-schema.org/draft-07/schema
+        type: object
+        properties:
+          image:
+            type: string
+            anyOf:
+              - pattern: ^us-docker.pkg.dev
+                type: string
+              - pattern: ^docker.io/rancher
+                type: string
+              - pattern: ^k8s.gcr.io
+                type: string
+              - pattern: ^quay.io/fairwinds
+                type: string
+              - pattern: ^quay.io/jetstack
+                type: string
+              - pattern: ^quay.io/rancher
+                type: string
+              - pattern: ^rancher
+                type: string
+              - pattern: ^cr.l5d.io
+                type: string
+
+    resourceLimits:
+      containers:
+        exclude:
+        - initContainer
+      successMessage: Resource limits are within the required range
+      failureMessage: Resource limits should be within the required range
+      category: FWCustom
+      target: Container
+      schema:
+        '$schema': http://json-schema.org/draft-07/schema
+        type: object
+        required:
+        - resources
+        properties:
+          resources:
+            type: object
+            required:
+            - limits
+            properties:
+              limits:
+                type: object
+                required:
+                - memory
+                - cpu
+                properties:
+                  memory:
+                    type: string
+                    resourceMinimum: 100Mi
+                    resourceMaximum: 1Gi
+                  cpu:
+                    type: string
+                    resourceMinimum: 100m
+                    resourceMaximum: "2"
+
+    hostPathMount:
+      successMessage: No volumes use hostPath
+      failureMessage: Hostpath mounts are not permitted
+      category: FWCustom
+      target: PodSpec
+      schema:
+        '$schema': http://json-schema.org/draft-07/schema
+        type: object
+        properties:
+          volumes:
+            type: array
+            items:
+              type: object
+              not:
+                anyOf:
+                  - required: ["hostPath"]
+
+  mutations:
+    - pullPolicyNotAlways
+
+  exemptions:
+    - controllerNames:
+        - kube-apiserver
+        - kube-proxy
+        - kube-scheduler
+        - etcd-manager-events
+        - kube-controller-manager
+        - kube-dns
+        - etcd-manager-main
+        - kindnet
+        - kube-scheduler-kind-control-plane
+        - metrics-server
+        - coredns
+        - local-path-provisioner
+      rules:
+        - hostPortSet
+        - hostNetworkSet
+        - readinessProbeMissing
+        - livenessProbeMissing
+        - cpuRequestsMissing
+        - cpuLimitsMissing
+        - memoryRequestsMissing
+        - memoryLimitsMissing
+        - runAsRootAllowed
+        - runAsPrivileged
+        - notReadOnlyRootFilesystem
+        - hostPIDSet
+        - teamLabel
+        - resourceLimits
+        - pullPolicyNotAlways
+        - insecureCapabilities
+        - dangerousCapabilities
+        - privilegeEscalationAllowed
+        - deploymentMissingReplicas
+        - hostPathMount
+        - archAnnotation
+        - missingPodDisruptionBudget
+        - linuxHardening
+
+    - controllerNames:
+        - cert-manager
+        - cert-manager-ca-injector
+        - cert-manager-webhook
+      rules:
+        - notReadOnlyRootFilesystem
+        - runAsRootAllowed
+        - readinessProbeMissing
+        - livenessProbeMissing
+        - deploymentMissingReplicas
+        - cpuRequestsMissing
+        - cpuLimitsMissing
+        - memoryRequestsMissing
+        - memoryLimitsMissing
+        - insecureCapabilities
+        - teamLabel
+        - resourceLimits
+        - missingPodDisruptionBudget
+
+    - controllerNames:
+        - kindnet
+      rules:
+        - hostNetworkSet
+        - dangerousCapabilities
