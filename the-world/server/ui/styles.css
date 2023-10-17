@@ -17,3 +17,15 @@
 	border-top: 1px solid gray;
 	padding-top: .3em;
 }
+
+.user-button {
+	width: 64px;
+	height: 64px;
+	border: 1px solid grey;
+	display: flex;
+	font-size: 64px;
+	justify-content: center;
+	align-items: center;
+	border-radius: 25%;
+	margin: 4px;
+}

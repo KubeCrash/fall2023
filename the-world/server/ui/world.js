@@ -57,7 +57,13 @@ class Player {
         this.init()
     }
 
+    setUser(user) {}
+
     init() {
+        this.logger.warning("PLAYER IS NOT SUPPORTED")
+        this.active = false
+        return
+
         if (!this.cellSet.isInitialized()) {
             this.logger.info(`Player ${this.country} WAIT...`)
 
@@ -113,7 +119,7 @@ class Player {
 
         // Next, post our smiley to the database.
         let baseURL = `/cells/${this.cell}/visit`
-        let param = `smiley=${smiley}&region=${this.region}`
+        let param = `user=${this.country}&smiley=${smiley}&region=${this.region}`
 
         new Request("POST", baseURL, param, `player ${this.country}`, (r) => {
             // this.logger.info(`Request completed: ${r.status} latency ${r.latency}ms`)
@@ -225,6 +231,7 @@ class CellSet {
     constructor(logger, fetchInterval) {
         this.logger = logger
         this.fetchInterval = fetchInterval
+        this.user = "world"
 
         this.active = false
         this.locations = {}
@@ -234,6 +241,11 @@ class CellSet {
         this.cells = {}
         this.allCells = null
         this.start()
+    }
+
+    setUser(user) {
+        this.logger.info(`CellSet: switch to user ${user}`)
+        this.user = user
     }
 
     isInitialized() {
@@ -292,7 +304,7 @@ class CellSet {
     }
 
     update() {
-        new Request("GET", "/cells/", "", "world", (r) => {
+        new Request("GET", "/cells/", `user=${this.user}`, "world", (r) => {
             if (r.ok) {
                 let world = r.response
 
@@ -345,11 +357,11 @@ class CellSet {
                     $(`${location}-player`).style.display = "flex"
                 }
             }
-        })
 
-        if (this.active && (this.fetchInterval > 0)) {
-            setTimeout(() => { this.update() }, this.fetchInterval)
-        }
+            if (this.active && (this.fetchInterval > 0)) {
+                setTimeout(() => { this.update() }, this.fetchInterval)
+            }
+        })
     }
 }
 
@@ -510,11 +522,21 @@ class Overlord {
         this.toggleButton = toggleButton
         this.active = false
         this.managed = []
+        this.user = "world"
         this.sw = new ToggleSwitch(
             $("btnToggle"), "Start", "Stop",
             () => { this.start() },
             () => { this.stop() }
         )
+    }
+
+    setUser(user) {
+        this.logger.info(`Overlord: switch to user ${user}`)
+        this.user = user
+
+        for (let managed of this.managed) {
+            managed.setUser(user)
+        }
     }
 
     addManaged(managed) {
@@ -546,17 +568,49 @@ class Overlord {
     }
 }
 
+class UserButtons {
+    constructor(logger, overlord, initialUser) {
+        this.logger = logger
+        this.overlord = overlord
+        this.user = initialUser
+
+        for (let flg of [ "world", "ca", "de", "es", "us" ]) {
+            this.logger.info(`Setting up userButton ${flg}`)
+            let btnId = `user-button-${flg}`
+
+            $(btnId).innerHTML = Flags[flg.toUpperCase()]
+            $(btnId).onclick = () => { this.setUser(flg) }
+        }
+
+        this.setUser(initialUser)
+    }
+
+    setUser(user) {
+        this.logger.info(`Switching to user ${user}`)
+
+        $(`user-button-${this.user}`).style.borderColor = "grey"
+
+        this.user = user
+
+        $(`user-button-${this.user}`).style.borderColor = "red"
+
+        this.overlord.setUser(this.user)
+    }
+}
+
+
 //////// Mainline
 //
 // When the page loads, we set up the world and fire up a timer to get things
 // moving.
 window.onload = () => {
-    let initialUser = "unknown";
+    let initialUser = "world";
     let logger = new Logger($("log"))
 
     logger.info(`Page loaded; user ${initialUser}`)
 
-    let overlord = new Overlord(logger, $(btnToggle))
+    let overlord = new Overlord(logger, "btnToggle")
+    new UserButtons(logger, overlord, initialUser)
 
     let cs = new CellSet(logger, 2000)
     overlord.addManaged(cs)

@@ -50,14 +50,15 @@ export const Smilies = {
 };
 
 export const Flags = {
-    "US":  "&#x1f1fa;&#x1f1f8;",
-    "CA":  "&#x1f1e8;&#x1f1e6;",
-    "MX":  "&#x1f1f2;&#x1f1fd;",
-    "CL":  "&#x1f1e8;&#x1f1f1;",
-    "ES":  "&#x1f1ea;&#x1f1f8;",
-    "FR":  "&#x1f1eb;&#x1f1f7;",
-    "DE":  "&#x1f1e9;&#x1f1ea;",
-    "ZH":  "&#x1f1e8;&#x1f1f3;",
-    "JP":  "&#x1f1ef;&#x1f1f5;",
-    "KR":  "&#x1f1f0;&#x1f1f7;",
+    "US":    "&#x1f1fa;&#x1f1f8;",
+    "CA":    "&#x1f1e8;&#x1f1e6;",
+    "MX":    "&#x1f1f2;&#x1f1fd;",
+    "CL":    "&#x1f1e8;&#x1f1f1;",
+    "ES":    "&#x1f1ea;&#x1f1f8;",
+    "FR":    "&#x1f1eb;&#x1f1f7;",
+    "DE":    "&#x1f1e9;&#x1f1ea;",
+    "ZH":    "&#x1f1e8;&#x1f1f3;",
+    "JP":    "&#x1f1ef;&#x1f1f5;",
+    "KR":    "&#x1f1f0;&#x1f1f7;",
+    "WORLD": "&#x1f310;"
 };

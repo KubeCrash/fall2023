@@ -4,13 +4,42 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/buoyantio/flag-demo/server/model"
 	"github.com/gofiber/fiber/v2"
 )
 
+func user_to_region(user string) string {
+	// XXX This is a brutal hack.
+	if (user == "") || (strings.ToLower(user) == "world") {
+		return "world"
+	}
+
+	if (strings.ToLower(user) == "es") || (strings.ToLower(user) == "de") {
+		return "eu"
+	}
+
+	return "na"
+}
+
+func cell_in_region(cell string, region string) bool {
+	if region == "world" {
+		return true
+	}
+
+	return strings.HasPrefix(strings.ToLower(cell), strings.ToLower(region))
+}
+
 func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
-	// Start by grabbing all the locations from the server.
+	// Who is the logged-in user? Yeah, this is a crock at the moment.
+	user := c.Query("user")
+	region := user_to_region(user)
+
+	fmt.Printf("getAllCellsHandler: user %s => region %s\n", user, region)
+
+	// Start by grabbing all the locations from the server. This works no
+	// matter what.
 	rows, err := s.db.Query(`SELECT * from locations`)
 	if err != nil {
 		fmt.Printf("error loading locations: %v\n", err)
@@ -104,6 +133,12 @@ func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
 			return fiber.NewError(http.StatusInternalServerError, "Database error")
 		}
 
+		// If the user isn't in the cell's region.
+		if !cell_in_region(name, region) {
+			recent_count = 0
+			total_count = 0
+		}
+
 		if _, ok := cells[name]; !ok {
 			cells[name] = &model.Cell{
 				Name:    name,
@@ -148,15 +183,17 @@ func (s *Server) getAllCellsHandler(c *fiber.Ctx) error {
 		Cells:     cells,
 	}
 
-	fmt.Printf("GET the world: %v\n", world)
+	// fmt.Printf("GET the world: %v\n", world)
 
 	return c.JSON(world)
 }
 
 func (s *Server) getCellHandler(c *fiber.Ctx) error {
+	// Who is the logged-in user? Yeah, this is a crock at the moment.
+	user := c.Query("user")
 	name := c.Params("name")
 
-	cell, err := getCell(s.db, name)
+	cell, err := getCell(s.db, name, user)
 	if err != nil {
 		return err
 	}
@@ -164,7 +201,11 @@ func (s *Server) getCellHandler(c *fiber.Ctx) error {
 	return c.JSON(cell)
 }
 
-func getCell(db *sql.DB, name string) (*model.Cell, error) {
+func getCell(db *sql.DB, name string, user string) (*model.Cell, error) {
+	// Yeah, this is a crock at the moment.
+	region := user_to_region(user)
+	fmt.Printf("getCell: user %s => region %s for %s\n", user, region, name)
+
 	var smiley string
 	if err := db.QueryRow(`SELECT smiley FROM cells WHERE name = $1`, name).Scan(&smiley); err == sql.ErrNoRows {
 		smiley = "neutral"
@@ -172,24 +213,30 @@ func getCell(db *sql.DB, name string) (*model.Cell, error) {
 		return nil, fiber.NewError(http.StatusInternalServerError, "Database error")
 	}
 
-	recents, err := getVisitorCounts(db, name, `
-        SELECT crdb_region, count(crdb_region) FROM
-            (SELECT crdb_region FROM visits WHERE cell_name = $1
-                ORDER BY timestamp DESC LIMIT 10)
-            GROUP BY crdb_region`)
+	recents := make(map[string]int)
+	totals := make(map[string]int)
+	var err error
 
-	if err != nil {
-		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
-	}
+	if cell_in_region(name, region) {
+		recents, err = getVisitorCounts(db, name, `
+			SELECT crdb_region, count(crdb_region) FROM
+				(SELECT crdb_region FROM visits WHERE cell_name = $1
+					ORDER BY timestamp DESC LIMIT 10)
+				GROUP BY crdb_region`)
 
-	totals, err := getVisitorCounts(db, name, `
-        SELECT crdb_region, count(crdb_region)
-				FROM visits
-				WHERE cell_name = $1
-        GROUP BY crdb_region`)
+		if err != nil {
+			return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
+		}
 
-	if err != nil {
-		return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
+		totals, err = getVisitorCounts(db, name, `
+			SELECT crdb_region, count(crdb_region)
+					FROM visits
+					WHERE cell_name = $1
+			GROUP BY crdb_region`)
+
+		if err != nil {
+			return nil, fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("Could not fetch recents: %v", err))
+		}
 	}
 
 	rows, err := db.Query("SELECT dest FROM connections WHERE src = $1", name)

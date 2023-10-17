@@ -22,7 +22,7 @@ func (s *Server) visitHandler(c *fiber.Ctx) error {
 		return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("database error: %v", err))
 	}
 
-	cell, err := getCell(s.db, name)
+	cell, err := getCell(s.db, name, player)
 	if err != nil {
 		return err
 	}
