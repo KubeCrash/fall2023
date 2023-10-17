@@ -237,12 +237,11 @@ spec:
         command:
           - "/bin/bash"
           - "-ecx"
-          # The use of qualified `hostname -f` is crucial:
-          # Other nodes aren't able to look up the unqualified hostname.
+          # Be careful with the hostname! We need the -us-east suffix.
           - exec
             /cockroach/cockroach
             start
-            --advertise-host $(hostname -f | sed -e 's!\..*\.!-!')
+            --advertise-host $(hostname)-us-east
             --logtostderr
             --certs-dir /cockroach/cockroach-certs
             --http-addr 0.0.0.0

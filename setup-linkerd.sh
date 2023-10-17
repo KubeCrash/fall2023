@@ -17,10 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Next up: install Emissary-ingress 3.1.0 as the ingress. This is mostly following
-# the quickstart, but we force every Deployment to one replica to reduce the load
-# on k3d.
-
 #@SHOW
 
 gen_anchor () {
@@ -46,10 +42,23 @@ gen_issuer () {
          "issuer-${domain}.crt" "issuer-${domain}.key"
 }
 
+# Assume that we're on k3d, but allow overriding.
+if [ -z "$CLUSTER_TYPE" ]; then
+    CLUSTER_TYPE=k3d
+    CUSTOM_DOMAINS=true
+fi
+
 GATEWAY=
-# GATEWAY="--gateway=false"
+
+if [ -n "$FLAT_NETWORKS" ]; then
+    GATEWAY="--gateway=false"
+fi
 
 LINK_ARGS="--set enableHeadlessServices=true"
+
+if [ -n "$DISABLE_HEADLESS" ]; then
+    LINK_ARGS=
+fi
 
 #### LINKERD_INSTALL_START
 
@@ -60,14 +69,20 @@ gen_issuer eu-central
 
 for ctx in us-east us-west eu-central; do \
     domain="${ctx}" ;\
+    CLUSTER_DOMAIN= ;\
+    if [ -n "$CUSTOM_DOMAINS" ]; then \
+        CLUSTER_DOMAIN="--cluster-domain ${domain}" ;\
+    fi ;\
     linkerd --context=$ctx install --crds | kubectl --context $ctx apply -f - ;\
     linkerd --context=$ctx install \
-        --cluster-domain "$domain" \
+        $CLUSTER_DOMAIN \
         --identity-trust-anchors-file trust-anchor.crt \
         --identity-issuer-certificate-file "issuer-${domain}.crt" \
         --identity-issuer-key-file "issuer-${domain}.key" \
         | kubectl --context $ctx apply -f - ;\
 done
+
+set -x
 
 for ctx in us-east us-west eu-central; do \
     linkerd --context=$ctx multicluster install $GATEWAY \
@@ -80,10 +95,24 @@ done
 
 # Link clusters.
 # Note that this bit with overriding the API server address is just a thing
-# for k3d: you shouldn't need this with cloud clusters.
-USEAST_APISERVER=$(kubectl --context us-east get node k3d-us-east-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
-USWEST_APISERVER=$(kubectl --context us-west get node k3d-us-west-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
-EUCENTRAL_APISERVER=$(kubectl --context eu-central get node k3d-eu-central-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
+# for k3d.
+
+USEAST_APISERVER=
+USWEST_APISERVER=
+EUCENTRAL_APISERVER=
+
+apiserver_addr () {
+    ctx="$1"
+
+    addr=$(kubectl --context $ctx get node k3d-$ctx-server-0 -o jsonpath='{.status.addresses[?(.type=="InternalIP")].address}')
+    echo "--api-server-address=https://${addr}:6443"
+}
+
+if [ "$CLUSTER_TYPE" = "k3d" ]; then
+    USEAST_APISERVER=$(apiserver_addr us-east)
+    USWEST_APISERVER=$(apiserver_addr us-west)
+    EUCENTRAL_APISERVER=$(apiserver_addr eu-central)
+fi
 
 set -x
 
@@ -95,19 +124,16 @@ set -x
 for ctx in us-east us-west eu-central; do \
     linkerd --context=us-east multicluster link \
             --cluster-name us-east \
-            $GATEWAY $LINK_ARGS \
-            --api-server-address="https://${USEAST_APISERVER}:6443" \
+            $GATEWAY $LINK_ARGS $USEAST_APISERVER \
             | kubectl --context $ctx apply -f - ;\
 
     linkerd --context=us-west multicluster link \
             --cluster-name us-west \
-            $GATEWAY $LINK_ARGS \
-            --api-server-address="https://${USWEST_APISERVER}:6443" \
+            $GATEWAY $LINK_ARGS $USWEST_APISERVER \
             | kubectl --context $ctx apply -f - ;\
 
     linkerd --context=eu-central multicluster link \
             --cluster-name eu-central \
-            $GATEWAY $LINK_ARGS \
-            --api-server-address="https://${EUCENTRAL_APISERVER}:6443" \
+            $GATEWAY $LINK_ARGS $EUCENTRAL_APISERVER \
             | kubectl --context $ctx apply -f - ;\
 done

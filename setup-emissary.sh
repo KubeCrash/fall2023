@@ -11,6 +11,14 @@ EMISSARY_VERSION=3.8.0
 EMISSARY_CRDS=https://app.getambassador.io/yaml/emissary/$EMISSARY_VERSION/emissary-crds.yaml
 EMISSARY_INGRESS=https://app.getambassador.io/yaml/emissary/$EMISSARY_VERSION/emissary-emissaryns.yaml
 
+# If MIRROR_TYPE is unset, assume we're doing flat networks.
+if [ -z "$MIRROR_TYPE" ]; then
+    MIRROR_TYPE=remote-discovery
+elif [ "$MIRROR_TYPE" == "gateway" ]; then
+    # Switch "gateway" to the "true" that the label needs.
+    MIRROR_TYPE=true
+fi
+
 install_emissary () {
     ctx="$1"
 
@@ -24,7 +32,7 @@ install_emissary () {
         sed -e 's/replicas: 3/replicas: 1/' | \
         linkerd --context "$ctx" inject - | kubectl --context "$ctx" apply -f -
 
-    kubectl --context "$ctx" label service -n emissary emissary-ingress 'mirror.linkerd.io/exported=remote-discovery'
+    kubectl --context "$ctx" label service -n emissary emissary-ingress "mirror.linkerd.io/exported=$MIRROR_TYPE"
     kubectl apply --context "$ctx" -f emissary/listeners-and-host.yaml
 }
 
