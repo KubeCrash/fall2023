@@ -28,8 +28,9 @@ for ctx in us-east us-west eu-central; do
         linkerd inject - | \
         kubectl --context $ctx apply -f -
 
+    # DON'T inject the players -- they talk only to Emissary, like a
+    # normal out-of-cluster client would.
     sed -e "s/%TAG%/$TAG/" < the-world/k8s/player-$ctx.yaml | \
-        linkerd inject - | \
         kubectl --context $ctx apply -f -
 done
 
