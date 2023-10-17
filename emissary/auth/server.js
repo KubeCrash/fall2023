@@ -72,6 +72,13 @@ app.all(authPath.concat('*'), function (req, res, next) {
         return
     }
 
+    if (!req.get('x-world-user')) {
+        console.log(`setting world user header to ${authentication.name}`)
+        res.set('x-world-user', authentication.name)
+    } else {
+        res.set('x-world-user', req.get('x-world-user'))
+    }
+
     if (usServers.test(authentication.name) && region === 'eu') {
         console.log('setting target region to us')
         res.set('x-region-target', 'us')
