@@ -27,6 +27,10 @@ for ctx in us-east us-west eu-central; do
     sed -e "s/%TAG%/$TAG/" < the-world/k8s/world.yaml | \
         linkerd inject - | \
         kubectl --context $ctx apply -f -
+
+    sed -e "s/%TAG%/$TAG/" < the-world/k8s/player-$ctx.yaml | \
+        linkerd inject - | \
+        kubectl --context $ctx apply -f -
 done
 
 for ctx in us-east us-west eu-central; do
@@ -38,3 +42,4 @@ for ctx in us-east us-west; do
 done
 
 kubectl apply --context eu-central -f emissary/mappings-eu.yaml
+

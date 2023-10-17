@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: player-de
+  namespace: world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: player-de
+  template:
+    metadata:
+      labels:
+        service: player-de
+    spec:
+      containers:
+      - name: world
+        image: %TAG%
+        command:
+          - "/bin/sh"
+          - -c
+          - while true; do /world/world --url http://emissary-ingress.emissary --player DE --sleep 2.5; done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: player-es
+  namespace: world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: player-es
+  template:
+    metadata:
+      labels:
+        service: player-es
+    spec:
+      containers:
+      - name: world
+        image: %TAG%
+        command:
+          - "/bin/sh"
+          - -c
+          - while true; do /world/world --url http://emissary-ingress.emissary --player ES --sleep 2.5; done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
