@@ -404,7 +404,11 @@ class Cell {
     getRecents(region) {
         if (region in this.recents) {
             return this.recents[region]
-        } else {
+        }
+        else if (region.toLowerCase() in this.recents) {
+            return this.recents[region.toLowerCase()]
+        }
+        else {
             return 0
         }
     }

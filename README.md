@@ -37,9 +37,30 @@ bash ./setup-world.sh
 After that you can e.g. `open http://localhost:8080/world/` to get the us-east
 GUI. The us-west GUI is on port 8081; eu-central is on 8082.
 
+You will have to authenticate. There are five users:
+
+`ca`, password `ca`: a North American user shown by an Canadian flag
+`de`, password `de`: a European user shown by a German flag
+`es`, password `es`: a European user shown by a Spanish flag
+`us`, password `us`: a North American user shown by an American flag
+`world`, password `world`: a special user who gets to see everything
+
+**Who you log in as matters**. The GUI will show you users wandering North
+America and Europe (sort of). Each user marks a smiley into the cell they're
+visiting, and also changes the background color: North American users make the
+background more red, European users make the background more green. **However,
+North American users only get to see background colors for North America, and
+European users only get to see background colors for Europe.** The `world`
+user gets to see everything.
+
+Also, if you connect to a North American Emissary (the Emissaries running in
+`us-east` or `us-west`) and then log in as a European user, you'll get
+redirected to the Emissary in `eu-central`. Same goes if you log into a North
+American user when talking to the `eu-central` Emissary.
+
 **Note:** the GUI is inefficient right now; every couple of seconds, it just
 reloads the world, which isn't necessarily all that nice to the database. This
-is very low on my priority list. [ :) ]
+is an area for future improvement.
 
 ### Run a player
 
