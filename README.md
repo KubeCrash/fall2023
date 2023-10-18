@@ -125,11 +125,7 @@ kubectl exec \
 Enter SQL shell
 
 ``` sh
-kubectl exec \
-   --context eu-central \
-   -it cockroachdb-0 -c cockroachdb \
-   --namespace cockroachdb \
-   -- cockroach sql --url "postgres://root@localhost:26257/defaultdb?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&sslcert=/cockroach/cockroach-certs/client.root.crt&sslkey=/cockroach/cockroach-certs/client.root.key"
+bash do-sql.sh
 ```
 
 Create user
@@ -157,13 +153,12 @@ kubectl port-forward svc/cockroachdb-public 8080:8080 -n cockroachdb
 
 ### Cleanup
 
-#### Drop CockroachDB tables and reinitialize
+#### Reset database state
 
-To just shred CockroachDB's tables and reinitialize, run
+To reset the world to a blank grey grid:
 
 ``` sh
-bash deinit-cockroachdb.sh
-bash init-cockroachdb.sh
+bash reset-world.sh
 ```
 
 #### Redeploy the world
@@ -175,6 +170,15 @@ kubectl delete --context eu-central ns world
 kubectl delete --context us-east ns world
 kubectl delete --context us-west ns world
 bash setup-world.sh
+```
+
+#### Drop CockroachDB tables and reinitialize
+
+To just shred CockroachDB's tables and reinitialize, run
+
+``` sh
+bash deinit-cockroachdb.sh
+bash init-cockroachdb.sh
 ```
 
 #### Completely reinstall CockroachDB
