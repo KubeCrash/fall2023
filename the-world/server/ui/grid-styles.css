@@ -10,7 +10,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* border: 1px solid grey; */
+  border: 1px solid grey;
   border-radius: 100px;
   overflow: hidden;
 }
