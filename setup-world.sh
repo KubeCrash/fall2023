@@ -27,7 +27,7 @@ for ctx in us-east us-west eu-central; do
         k3d image import $TAG -c $ctx
     fi
 
-    kubectl --context $ctx create ns world
+    kubectl --context $ctx create ns world || true
 
     sed -e "s,%TAG%,$TAG," < the-world/k8s/world-gui.yaml | \
         linkerd --context $ctx inject - | \
