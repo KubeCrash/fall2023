@@ -11,6 +11,7 @@ type Cell struct {
 
 // World describes the world as a whole.
 type World struct {
+	User      string            `json:"user"`
 	Locations map[string]string `json:"locations"`
 	Cells     map[string]*Cell  `json:"cells"`
 }

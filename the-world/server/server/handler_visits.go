@@ -6,23 +6,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func (s *Server) visitHandler(c *fiber.Ctx) error {
-	name := c.Params("name")
-	player := c.Query("player")
-	smiley := c.Query("smiley")
-	region := c.Query("region")
+	// Who is the logged-in user? We trust what Emissary says here since
+	// it's managing auth and Linkerd is securing that bit.
+	user := strings.ToUpper(string(c.Request().Header.Peek("x-world-user")))
+	region := user_to_region(user)
 
-	if err := visitCell(c.Context(), s.db, name, player, smiley, region); err != nil {
+	name := c.Params("name")
+	// player := c.Query("player")
+	smiley := c.Query("smiley")
+
+	if err := visitCell(c.Context(), s.db, name, user, smiley, region); err != nil {
 		log.Printf("database error: %v", err)
 		return fiber.NewError(http.StatusInternalServerError, fmt.Sprintf("database error: %v", err))
 	}
 
-	cell, err := getCell(s.db, name)
+	cell, err := getCell(s.db, name, user)
 	if err != nil {
 		return err
 	}
@@ -33,7 +38,7 @@ func (s *Server) visitHandler(c *fiber.Ctx) error {
 func visitCell(ctx context.Context, db *sql.DB, name, player, smiley, region string) error {
 	now := time.Now()
 
-	fmt.Printf("%s: cell %s, player %s, smiley %s, region %s\n", now, name, player, smiley, region)
+	fmt.Printf("%s: VISIT %s: %s sets %s (%s)\n", now, name, player, smiley, region)
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
